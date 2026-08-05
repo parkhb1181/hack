@@ -174,27 +174,30 @@ describe('프롬프트 — 문서와 어긋나면 안 된다', () => {
   })
 
   /**
-   * 두 번 실패한 자리다.
+   * 세 번 실패한 자리다. 실패한 문장을 프롬프트가 그대로 들고 있는 이유다 —
+   * 안 보여주면 모델은 그게 실패인 줄 모른다.
    *
-   * 1. 한 줄로 줄이랬더니 `메시지 점유율은 당신 57%…`가 왔다 — 낭독.
-   * 2. 숫자를 막았더니 `시소 타듯 번갈아 가며 주고받고 있네`가 왔다 —
-   *    맞는 말인데 안 웃긴다. "놀리지 않는다"고 써 둔 줄이 범인이었다.
-   *
-   * 그래서 프롬프트가 **실패 예를 직접 들고 있다.** 재미없는 문장을
-   * 보여주지 않으면 모델은 그게 실패인 줄 모른다.
+   * 1. 한 줄로 줄이랬더니 `메시지 점유율은 당신 57%…` — 낭독.
+   * 2. 숫자를 막았더니 `시소 타듯 번갈아 가며 주고받고 있네` — 비유로
+   *    돌려 말한다. 맞는 말인데 아무 말도 아니다.
+   * 3. `메시지는 네가 좀 더 많이 보냈네` — 뭉갠다.
    */
-  it('낭독과 밋밋함을 둘 다 실패 예로 든다', () => {
-    expect(SYSTEM_PROMPT).toContain('재미없으면 실패다')
+  it('실패 예를 프롬프트가 직접 들고 있다', () => {
     expect(SYSTEM_PROMPT).toContain('이러면 실패')
     expect(SYSTEM_PROMPT).toContain('이러면 성공')
-    expect(SYSTEM_PROMPT).toContain('점유율') // 낭독 실패 예
-    expect(SYSTEM_PROMPT).toContain('시소') // 밋밋함 실패 예
+    expect(SYSTEM_PROMPT).toContain('점유율') // 낭독
+    expect(SYSTEM_PROMPT).toContain('시소') // 비유
   })
 
-  /** 놀려도 되지만 사람을 깎지는 않는다 — 이 경계가 빠지면 조롱이 된다 */
-  it('놀리는 대상을 상황으로 못 박는다', () => {
-    expect(SYSTEM_PROMPT).toContain('사람을 깎아내리지 마라')
-    expect(SYSTEM_PROMPT).not.toContain('놀리지 않고')
+  /** 돌직구를 시켰으므로 비유를 막는 줄이 반드시 있어야 한다 */
+  it('비유를 금지한다', () => {
+    expect(SYSTEM_PROMPT).toContain('돌려 말하지 마라')
+    expect(SYSTEM_PROMPT).toContain('비유 금지')
+  })
+
+  /** 세게 말해도 사람을 깎지는 않는다 — 이 경계가 빠지면 비하가 된다 */
+  it('직설과 비하를 갈라 둔다', () => {
+    expect(SYSTEM_PROMPT).toContain('깎아내리진 마라')
   })
 })
 
