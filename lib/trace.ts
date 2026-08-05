@@ -130,7 +130,16 @@ export type Trace = {
   /** txt · csv 경로에서만 채워진다 */
   text: TextTrace | null
   /** 이미지 간 겹침 병합 */
-  merge: { pages: number; before: number; after: number; removed: number } | null
+  merge: {
+    pages: number
+    before: number
+    after: number
+    removed: number
+    /** 겹침으로 순서를 다시 세웠는가 */
+    reordered: boolean
+    /** 실제로 이어붙인 순서 */
+    order: string[]
+  } | null
   corpus: {
     windowFilled: number
     infoUnits: number

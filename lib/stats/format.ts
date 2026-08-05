@@ -14,7 +14,15 @@
 import type { Pair } from '@/lib/metrics/basic'
 
 export type Rendered =
+  /** 나 / 상대를 나란히 */
   | { kind: 'pair'; me: number; other: number; unit: string; note?: string }
+  /**
+   * 한쪽 값만 있는 지표. **`text`로 두면 안 된다** — 실측으로 카드에
+   * "16 / 100 · 높을수록…"이 검은 평문으로 찍혀서 다른 카드와 따로 놀았다.
+   * `max`가 있으면 막대까지 그린다.
+   */
+  | { kind: 'single'; value: number; unit: string; max?: number; note?: string }
+  /** 숫자로 못 줄이는 것 (말버릇 목록 등) */
   | { kind: 'text'; text: string }
 
 export function renderMetric(key: string, v: unknown): Rendered {
@@ -47,10 +55,21 @@ export function renderMetric(key: string, v: unknown): Rendered {
       }
 
     case 'styleSep':
-      return { kind: 'text', text: `${v as number} / 100 · 높을수록 서로 다르게 말한다` }
+      return {
+        kind: 'single',
+        value: v as number,
+        unit: '',
+        max: 100,
+        note: '높을수록 서로 다르게 말해요',
+      }
 
     case 'deletedCount':
-      return { kind: 'text', text: `${v as number}건` }
+      return {
+        kind: 'single',
+        value: v as number,
+        unit: '건',
+        note: (v as number) > 0 ? '지웠다는 것만 남아 있어요' : '지운 메시지가 없어요',
+      }
 
     case 'initiation': {
       const i = v as { me: number; other: number; sessions: number; wakeAdjusted: boolean }
@@ -104,14 +123,25 @@ export function renderMetric(key: string, v: unknown): Rendered {
 
     case 'changePoint': {
       const c = v as { month: string; drop: number } | null
-      if (!c) return { kind: 'text', text: '뚜렷한 변화점 없음' }
-      return { kind: 'text', text: `${Number(c.month.split('-')[1])}월부터 ${c.drop}% 줄었습니다` }
+      if (!c) return { kind: 'text', text: '뚜렷하게 식은 지점은 없어요' }
+      return {
+        kind: 'single',
+        value: c.drop,
+        unit: '%',
+        max: 100,
+        note: `${Number(c.month.split('-')[1])}월부터 줄었어요`,
+      }
     }
 
     case 'monthly': {
       const m = v as { points: Array<{ month: string; count: number }>; span: number }
       const top = [...m.points].sort((a, b) => b.count - a.count)[0]
-      return { kind: 'text', text: `${m.span}개월 · 가장 많았던 달 ${top?.month} (${top?.count}건)` }
+      return {
+        kind: 'single',
+        value: m.span,
+        unit: '개월',
+        note: top ? `가장 뜨거웠던 달은 ${Number(top.month.split('-')[1])}월 (${top.count}건)` : undefined,
+      }
     }
 
     case 'phraseGap': {

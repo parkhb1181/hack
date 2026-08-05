@@ -521,19 +521,19 @@ function Running({
 
   return (
     <div className="body">
-      <div style={{ textAlign: 'center', marginTop: 28 }}>
+      <div style={{ textAlign: 'center', marginTop: 12, flexShrink: 0 }}>
         <div className="logo lg" style={{ margin: '0 auto' }}>
           ↗
         </div>
-        <h2 className="mid" style={{ marginBottom: 6 }}>
+        <h2 className="mid" style={{ marginBottom: 4, marginTop: 16 }}>
           대화를 읽고 있어요
         </h2>
-        <p className="lead" style={{ marginBottom: 0, fontSize: 13.5 }}>
+        <p className="lead" style={{ marginBottom: 0, fontSize: 13 }}>
           한 번에 끝나는 게 아니라, 다섯 단계를 지나요.
         </p>
       </div>
 
-      <div className="stack" style={{ marginTop: 28, gap: 10 }}>
+      <div className="steps">
         {STEPS.map((s, i) => {
           const st = steps[s.key]
           return (
@@ -548,12 +548,12 @@ function Running({
         })}
       </div>
 
-      <div className="spacer" style={{ paddingTop: 24 }}>
+      <div style={{ paddingTop: 16, flexShrink: 0 }}>
         <div className="tip">{tip}</div>
-        <div className="bar" style={{ marginTop: 14 }}>
+        <div className="bar" style={{ marginTop: 12 }}>
           <i style={{ width: `${pct}%` }} />
         </div>
-        <div style={{ fontSize: 12, color: 'var(--mute-2)', marginTop: 10, textAlign: 'center' }}>
+        <div style={{ fontSize: 11.5, color: 'var(--mute-2)', marginTop: 8, textAlign: 'center' }}>
           이미지는 분석이 끝나면 바로 사라져요
         </div>
       </div>
@@ -785,8 +785,23 @@ function MetricsView({ res, onBack }: { res: Result; onBack: () => void }) {
                     </div>
                     {out.note && <div className="note">{out.note}</div>}
                   </>
+                ) : out.kind === 'single' ? (
+                  <>
+                    <div className="solo">
+                      <b>{out.value}</b>
+                      {out.unit && <span className="u">{out.unit}</span>}
+                      {out.max != null && <em>/ {out.max}</em>}
+                    </div>
+                    {out.max != null && (
+                      <div className="mbar">
+                        <i style={{ width: `${Math.min(100, (out.value / out.max) * 100)}%` }} />
+                        <u />
+                      </div>
+                    )}
+                    {out.note && <div className="note">{out.note}</div>}
+                  </>
                 ) : (
-                  <div className="note" style={{ fontSize: 15, color: 'var(--ink)', marginTop: 6 }}>
+                  <div className="note" style={{ fontSize: 14, color: 'var(--sub)', marginTop: 8 }}>
                     {out.text}
                   </div>
                 )}

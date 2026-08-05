@@ -70,6 +70,16 @@ for (const [key, r] of Object.entries(metrics)) {
       `● ${label.padEnd(15)} 나 ${String(out.me).padStart(6)}${out.unit}  ${bar(out.me, out.other)}  ${String(out.other).padStart(6)}${out.unit} 상대`,
     )
     if (out.note) console.log(`  ${' '.repeat(16)}${out.note}`)
+  } else if (out.kind === 'single') {
+    const g =
+      out.max != null
+        ? `  ${'█'.repeat(Math.round((out.value / out.max) * 20)).padEnd(20, '░')}`
+        : ''
+    console.log(
+      `● ${label.padEnd(15)} ${String(out.value).padStart(6)}${out.unit}` +
+        `${out.max != null ? ` / ${out.max}` : ''}${g}`,
+    )
+    if (out.note) console.log(`  ${' '.repeat(16)}${out.note}`)
   } else {
     console.log(`● ${label.padEnd(15)} ${out.text}`)
   }

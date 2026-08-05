@@ -33,6 +33,10 @@
 
   --soft: #ffedf0;
   --soft-2: #ffe4e9;
+  /* 막대·게이지 전용 파스텔 — 카드가 여럿 모여도 안 시끄럽게 */
+  --bar-a: #ffc4d3;
+  --bar-b: #ff9db4;
+  --bar-track: #fdeef2;
   --soft-3: #fff3f5;
   --soft-4: #fbedf0;
 
@@ -540,14 +544,46 @@ p.lead {
 
 /* ------------------------------ 처리 ------------------------------ */
 
+/*
+ * 단계 목록. 안내 문구가 길면 두 줄이 되어 행이 커진다 — 실측으로 처리
+ * 화면이 41px 넘쳐 잘렸다. 목록 자체가 넘칠 수 있게 두고(`.steps`),
+ * 행 안에서는 이름과 안내가 서로를 밀지 않게 폭을 나눈다.
+ */
+/*
+ * 다섯 칸이 **한 화면에 다 보여야 한다.** 진행을 보려고 만든 화면인데 스크롤을
+ * 시키면 다음 단계가 화면 밖에 있다.
+ *
+ * 그래서 목록이 남는 높이를 나눠 갖고, 칸은 `flex:1`로 같이 줄어든다.
+ * 안내 문구가 길어져도 칸이 커지지 않게 한 줄로 자른다 — 실측으로 두 줄이
+ * 되면서 41px 넘쳐 잘렸다.
+ */
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
 .step {
   background: #fff;
   border-radius: 20px;
-  padding: 14px 18px;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   transition: opacity 0.3s;
+  /* 다섯 칸이 남는 높이를 고르게 나눈다 */
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.step .name {
+  flex: 1;
+  min-width: 0;
 }
 
 .step .mark {
@@ -573,6 +609,19 @@ p.lead {
   font-size: 11px;
   color: var(--faint);
   text-align: right;
+  line-height: 1.4;
+  /* 이름을 밀지 않고, 길어도 칸을 키우지 않는다 — 한 줄로 자른다 */
+  max-width: 46%;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.step .name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .step[data-state='wait'] {
@@ -633,7 +682,7 @@ p.lead {
 .bar i {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #ff8fa8, #ff5a80);
+  background: linear-gradient(90deg, #ffc4d3, #ff9db4);
   border-radius: 999px;
   transition: width 0.5s ease;
 }
@@ -704,7 +753,7 @@ p.lead {
   left: 0;
   top: 0;
   bottom: 0;
-  background: linear-gradient(90deg, #ffa3b8, #ff5a80);
+  background: linear-gradient(90deg, #ffc9d8, #ff9db4);
   border-radius: 999px;
   transition: width 0.8s ease;
 }
@@ -910,21 +959,53 @@ p.lead {
   margin: 0 4px;
 }
 
+/* 한쪽 값만 있는 지표 — 평문으로 두면 다른 카드와 따로 논다 */
+.solo {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  margin-top: 6px;
+}
+
+.solo b {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--hot);
+  letter-spacing: -0.02em;
+}
+
+.solo .u {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--hot);
+}
+
+.solo em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--faint);
+  margin-left: 3px;
+}
+
+/*
+ * 막대는 **파스텔**로 간다. 원래 쓰던 #FF5A80은 채도가 높아 카드가 여럿
+ * 모이면 화면이 시끄러웠다. 색을 낮추고 폭을 키워 부드럽게 읽히게 한다.
+ */
 .mbar {
   display: flex;
-  height: 8px;
+  height: 10px;
   border-radius: 999px;
   overflow: hidden;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .mbar i {
-  background: linear-gradient(90deg, #ff8fa8, #ff5a80);
+  background: linear-gradient(90deg, #ffc4d3, #ff9db4);
 }
 
 .mbar u {
   flex: 1;
-  background: var(--soft-2);
+  background: #fdeef2;
 }
 
 .mcard .note {
@@ -960,7 +1041,7 @@ p.lead {
 }
 
 .mini i {
-  background: #d9aebd;
+  background: #f0bfcd;
 }
 
 .footnote {

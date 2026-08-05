@@ -841,6 +841,113 @@ function equalRun(a: Msg[], b: Msg[]): boolean {
   return true
 }
 
+/** a의 꼬리와 b의 머리가 몇 건 겹치는가. 0이면 안 겹친다 */
+export function overlapOf(a: Msg[], b: Msg[]): number {
+  const max = Math.min(MAX_OVERLAP, a.length, b.length)
+  for (let k = max; k >= MIN_OVERLAP; k--) {
+    if (equalRun(a.slice(-k), b.slice(0, k))) return k
+  }
+  return 0
+}
+
+export type OrderResult = {
+  /** 원본 배열에 대한 인덱스 순서 */
+  order: number[]
+  /** 이 순서로 이었을 때 겹침 총합 */
+  score: number
+  /** 사용자가 넣은 순서와 달라졌는가 */
+  reordered: boolean
+}
+
+/** 전수 탐색을 포기하는 장수 — 그 위로는 탐욕법으로 잇는다 */
+export const ORDER_EXHAUSTIVE_MAX = 8
+
+/**
+ * 캡처를 **겹침으로 다시 세운다** — SPEC §4.2
+ *
+ * 캡처에는 `ts`가 없다. 시간축으로 되돌릴 수단이 없으니 순서가 곧 결과인데,
+ * 사용자가 파일을 고르는 순서는 믿을 게 못 된다(파일 탐색기 정렬, 다중 선택
+ * 순서 등). 실측: 겹치게 찍은 2장을 뒤집어 넣으면 겹친 4건이 중복으로 남아
+ * 20건이 됐다.
+ *
+ * 그래서 **겹치는 쌍을 찾아 사슬로 잇는다.** 스크롤 캡처는 앞 장의 꼬리와
+ * 뒷 장의 머리가 같으므로, 그 관계가 순서를 알려준다.
+ *
+ * **겹침이 하나도 없으면 손대지 않는다.** 따로 찍은 캡처는 순서를 알 수단이
+ * 없고, 그때 임의로 재배열하면 없는 근거로 결과를 바꾸는 것이 된다.
+ */
+export function orderPages(pages: Msg[][]): OrderResult {
+  const n = pages.length
+  const identity = { order: pages.map((_, i) => i), score: 0, reordered: false }
+  if (n < 2) return identity
+
+  // 모든 방향쌍의 겹침을 미리 재둔다
+  const ov: number[][] = pages.map((a, i) => pages.map((b, j) => (i === j ? 0 : overlapOf(a, b))))
+  const total = ov.flat().reduce((s, v) => s + v, 0)
+  if (total === 0) return identity // 겹침이 없다 — 알 방법이 없으니 그대로 둔다
+
+  const scoreOf = (o: number[]) => o.slice(1).reduce((s, cur, k) => s + ov[o[k]][cur], 0)
+  const given = pages.map((_, i) => i)
+
+  let best = given
+  let bestScore = scoreOf(given)
+
+  if (n <= ORDER_EXHAUSTIVE_MAX) {
+    // 8장이면 40320가지. 겹침은 미리 재뒀으므로 순열당 7번만 더하면 된다.
+    const perm = (rest: number[], acc: number[]) => {
+      if (rest.length === 0) {
+        const s = scoreOf(acc)
+        if (s > bestScore) {
+          bestScore = s
+          best = [...acc]
+        }
+        return
+      }
+      for (let i = 0; i < rest.length; i++) {
+        perm([...rest.slice(0, i), ...rest.slice(i + 1)], [...acc, rest[i]])
+      }
+    }
+    perm(given, [])
+  } else {
+    // 장수가 많으면 전수는 못 돈다. 가장 세게 겹치는 쌍부터 이어 붙인다.
+    let start = 0
+    let bestHead = -1
+    for (let i = 0; i < n; i++) {
+      // 아무도 앞에 오지 않는 장(들어오는 겹침이 가장 약한 장)이 머리다
+      const incoming = Math.max(...pages.map((_, j) => (j === i ? 0 : ov[j][i])))
+      if (bestHead === -1 || incoming < bestHead) {
+        bestHead = incoming
+        start = i
+      }
+    }
+    const chain = [start]
+    const left = new Set(given.filter((i) => i !== start))
+    while (left.size) {
+      const tail = chain[chain.length - 1]
+      let pick = -1
+      let pickOv = -1
+      for (const j of left) {
+        if (ov[tail][j] > pickOv) {
+          pickOv = ov[tail][j]
+          pick = j
+        }
+      }
+      chain.push(pick)
+      left.delete(pick)
+    }
+    if (scoreOf(chain) > bestScore) {
+      best = chain
+      bestScore = scoreOf(chain)
+    }
+  }
+
+  return {
+    order: best,
+    score: bestScore,
+    reordered: best.some((v, i) => v !== i),
+  }
+}
+
 export type MergeReport = {
   messages: Msg[]
   /** 이미지별 제거된 중복 개수 */

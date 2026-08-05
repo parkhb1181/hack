@@ -504,6 +504,12 @@ function Metrics({ report }: { report: Report }) {
                 <PairBar me={out.me} other={out.other} />
                 {out.note && <div className="note-s">{out.note}</div>}
               </>
+            ) : out.kind === 'single' ? (
+              <div className="v">
+                {out.value}
+                {out.unit}
+                {out.max != null && <span className="dimtext"> / {out.max}</span>}
+              </div>
             ) : (
               <div className="v">{out.text}</div>
             )}

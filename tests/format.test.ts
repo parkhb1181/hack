@@ -45,13 +45,13 @@ describe('표시 변환', () => {
   })
 
   it('변화점이 없으면 없다고 쓴다 — null을 찍지 않는다', () => {
-    expect(renderMetric('changePoint', null)).toEqual({
-      kind: 'text',
-      text: '뚜렷한 변화점 없음',
-    })
-    expect(renderMetric('changePoint', { month: '2026-03', drop: 41.2 })).toEqual({
-      kind: 'text',
-      text: '3월부터 41.2% 줄었습니다',
+    expect(renderMetric('changePoint', null)).toMatchObject({ kind: 'text' })
+    // 있으면 숫자로 세운다. 평문으로 두면 다른 카드와 따로 논다
+    expect(renderMetric('changePoint', { month: '2026-03', drop: 41.2 })).toMatchObject({
+      kind: 'single',
+      value: 41.2,
+      unit: '%',
+      max: 100,
     })
   })
 

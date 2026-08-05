@@ -36,6 +36,7 @@ import {
   isUiGlyph,
   mergeMessages,
   mergeRowFragments,
+  orderPages,
   toMessages as ocrToMessages,
   type OcrLine,
   type OcrPage,
@@ -213,20 +214,27 @@ async function parseCaptures(files: File[]): Promise<CaptureLeg> {
   }
 
   const before = perPage.reduce((n, m) => n + m.length, 0)
+
+  // 고른 순서를 믿지 않는다 — 겹침으로 다시 세운다(SPEC §4.2).
+  // 겹침이 하나도 없으면 손대지 않는다: 알 방법이 없는데 재배열하면
+  // 없는 근거로 결과를 바꾸는 것이 된다.
+  const ord = orderPages(perPage)
   const merged = mergeMessages(
-    perPage,
-    files.map((f) => f.name),
+    ord.order.map((i) => perPage[i]),
+    ord.order.map((i) => files[i].name),
   )
 
   return {
     messages: merged.messages,
-    pages,
-    ocrPages,
+    pages: ord.order.map((i) => pages[i]),
+    ocrPages: ord.order.map((i) => ocrPages[i]),
     merge: {
       pages: files.length,
       before,
       after: merged.messages.length,
       removed: before - merged.messages.length,
+      reordered: ord.reordered,
+      order: ord.order.map((i) => files[i].name),
     },
     gaps: [
       ...new Set([
@@ -368,7 +376,7 @@ async function pipeline(form: FormData, emit: Emit) {
     const leg = await parseTextFile(textFile, overrideMe)
     mark('parse', t)
     emit({ key: 'read', state: 'done', detail: `${leg.messages.length}개 메시지` })
-    emit({ key: 'merge', state: 'skip', detail: '파일은 한 덩어리라 이어붙일 게 없어요' })
+    emit({ key: 'merge', state: 'skip', detail: '한 덩어리예요' })
     messages = leg.messages
     text = leg.trace
     source = leg.source
@@ -407,7 +415,7 @@ async function pipeline(form: FormData, emit: Emit) {
     emit({
       key: 'affect',
       state: 'skip',
-      detail: mode === 'txt' ? '파일에는 그림이 없어요' : undefined,
+      detail: mode === 'txt' ? '그림이 없어요' : undefined,
     })
   }
   if (useVision && mode === 'capture') {
@@ -493,7 +501,7 @@ async function pipeline(form: FormData, emit: Emit) {
     emit({
       key: 'affect',
       state: error ? 'skip' : 'done',
-      detail: error ? '이번엔 못 읽었어요' : read ? `${read}개 읽음` : '읽을 그림이 없었어요',
+      detail: error ? '못 읽었어요' : read ? `${read}개 읽음` : '그림 없음',
     })
   }
 
@@ -567,7 +575,7 @@ async function pipeline(form: FormData, emit: Emit) {
   emit({
     key: 'metric',
     state: 'done',
-    detail: isHardFloor(report) ? '대화가 조금 짧아요' : `${okCount}개 지표`,
+    detail: isHardFloor(report) ? '조금 짧아요' : `${okCount}개 지표`,
   })
 
   /* ── 5. LLM — 집계 숫자만 나간다 (두 경로 공통) ───────────── */
@@ -594,7 +602,7 @@ async function pipeline(form: FormData, emit: Emit) {
     emit({
       key: 'write',
       state: 'done',
-      detail: r.source === 'llm' ? undefined : '기본 문장으로 대신했어요',
+      detail: r.source === 'llm' ? undefined : '기본 문장으로',
     })
   }
 
