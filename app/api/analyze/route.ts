@@ -76,6 +76,30 @@ export const dynamic = 'force-dynamic'
 
 const OCR_URL = process.env.OCR_SERVICE_URL ?? 'http://127.0.0.1:8756'
 
+/**
+ * 스트림이 열린 뒤에는 HTTP 상태 코드를 바꿀 수 없다. 실패를 예외로 던지고
+ * 바깥에서 이벤트로 바꿔 보낸다.
+ */
+class Fail extends Error {
+  constructor(
+    readonly status: number,
+    readonly body: Record<string, unknown>,
+  ) {
+    super(String(body.error ?? '실패'))
+    this.name = 'Fail'
+  }
+}
+
+/** 처리 화면이 그릴 단계 — 실제로 도는 코드가 알린다 */
+export type StageEvent = {
+  key: 'read' | 'merge' | 'affect' | 'metric' | 'write'
+  state: 'run' | 'done' | 'skip'
+  /** 카드 오른쪽에 붙는 짧은 결과 ("42개 말풍선") */
+  detail?: string
+}
+
+type Emit = (e: StageEvent) => void
+
 const round3 = (n: number | null) => (n == null ? null : Math.round(n * 1000) / 1000)
 
 /** 추적 기록에 담을 메시지 상한 — 개발자 모드에서 눈으로 보는 용도다 */
@@ -144,7 +168,7 @@ type CaptureLeg = {
   gaps: string[]
 }
 
-async function parseCaptures(files: File[]): Promise<CaptureLeg | { fail: NextResponse }> {
+async function parseCaptures(files: File[]): Promise<CaptureLeg> {
   const pages: PageTrace[] = []
   const ocrPages: OcrPage[] = []
   const perPage: Msg[][] = []
@@ -154,12 +178,7 @@ async function parseCaptures(files: File[]): Promise<CaptureLeg | { fail: NextRe
     try {
       page = await runOcr(file)
     } catch (e) {
-      return {
-        fail: NextResponse.json(
-          { error: e instanceof Error ? e.message : 'OCR 실패' },
-          { status: 502 },
-        ),
-      }
+      throw new Fail(502, { error: e instanceof Error ? e.message : 'OCR 실패' })
     }
     ocrPages.push(page)
 
@@ -190,12 +209,7 @@ async function parseCaptures(files: File[]): Promise<CaptureLeg | { fail: NextRe
 
   const rejected = pages.find((p) => p.rejected)
   if (rejected) {
-    return {
-      fail: NextResponse.json(
-        { error: `3인 이상 대화는 분석하지 않습니다 (화자 ${rejected.speakers}명, PRD §5)` },
-        { status: 422 },
-      ),
-    }
+    throw new Fail(422, { error: `3인 이상 대화는 분석하지 않습니다 (화자 ${rejected.speakers}명, PRD §5)` })
   }
 
   const before = perPage.reduce((n, m) => n + m.length, 0)
@@ -239,7 +253,7 @@ function looksLikeCsv(name: string, body: string): boolean {
 async function parseTextFile(
   file: File,
   overrideMe: string | undefined,
-): Promise<TextLeg | { fail: NextResponse }> {
+): Promise<TextLeg> {
   const body = await file.text()
   const kind: TextTrace['kind'] = looksLikeCsv(file.name, body) ? 'csv' : 'txt'
 
@@ -247,26 +261,16 @@ async function parseTextFile(
   if (kind === 'csv') {
     const r = parseCsv(body)
     if (isCsvFailure(r)) {
-      return {
-        fail: NextResponse.json(
-          { error: `CSV 형식을 읽지 못했습니다 — ${r.detail}` },
-          { status: 422 },
-        ),
-      }
+      throw new Fail(422, { error: `CSV 형식을 읽지 못했습니다 — ${r.detail}` })
     }
     p = r
   } else {
     const r = parseTxt(body)
     if (isUnsupported(r)) {
-      return {
-        fail: NextResponse.json(
-          {
+      throw new Fail(422, {
             error:
               'iOS 내보내기는 txt가 아니라 CSV입니다. 카카오톡에서 CSV로 내보낸 파일을 넣어주세요.',
-          },
-          { status: 422 },
-        ),
-      }
+          })
     }
     p = r
   }
@@ -292,31 +296,21 @@ async function parseTextFile(
   }
 
   if (who.rejected === 'group_chat') {
-    return {
-      fail: NextResponse.json(
-        {
+    throw new Fail(422, {
           error: `3인 이상 대화는 분석하지 않습니다 (화자 ${p.speakers.length}명, PRD §5)`,
           trace: { text: trace },
-        },
-        { status: 422 },
-      ),
-    }
+        })
   }
 
   // 제목 줄이 없는 형식(CSV)은 누가 '나'인지 알 수 없다. 추측하면 기울기 부호가
   // 통째로 뒤집히므로 **묻는다** — SPEC §3.10.
   if (!who.resolved) {
-    return {
-      fail: NextResponse.json(
-        {
+    throw new Fail(409, {
           error: '누가 본인인지 골라주세요',
           needsSpeaker: true,
           speakers: p.speakers.map((s) => ({ name: s.name, count: s.count })),
           trace: { text: trace },
-        },
-        { status: 409 },
-      ),
-    }
+        })
   }
 
   return {
@@ -329,18 +323,11 @@ async function parseTextFile(
 
 /* ------------------------------ 라우트 ------------------------------ */
 
-export async function POST(req: Request) {
+async function pipeline(form: FormData, emit: Emit) {
   const t0 = Date.now()
   const timings: Record<string, number> = {}
   const mark = (k: string, from: number) => {
     timings[k] = Date.now() - from
-  }
-
-  let form: FormData
-  try {
-    form = await req.formData()
-  } catch {
-    return NextResponse.json({ error: '폼 데이터를 읽지 못했습니다' }, { status: 400 })
   }
 
   const images = form.getAll('images').filter((f): f is File => f instanceof File)
@@ -361,11 +348,13 @@ export async function POST(req: Request) {
   let merge: Trace['merge'] = null
   let gaps: string[] = []
 
+  emit({ key: 'read', state: 'run' })
   if (textFile instanceof File && textFile.size > 0) {
     const t = Date.now()
     const leg = await parseTextFile(textFile, overrideMe)
     mark('parse', t)
-    if ('fail' in leg) return leg.fail
+    emit({ key: 'read', state: 'done', detail: `${leg.messages.length}개 메시지` })
+    emit({ key: 'merge', state: 'skip', detail: '파일은 한 덩어리라 이어붙일 게 없어요' })
     messages = leg.messages
     text = leg.trace
     source = leg.source
@@ -374,18 +363,24 @@ export async function POST(req: Request) {
     const t = Date.now()
     const leg = await parseCaptures(images)
     mark('ocr', t)
-    if ('fail' in leg) return leg.fail
     messages = leg.messages
     pages = leg.pages
     ocrPages = leg.ocrPages
     merge = leg.merge
     gaps = leg.gaps
     mode = 'capture'
+    emit({
+      key: 'read',
+      state: 'done',
+      detail: `${leg.pages.reduce((n, p) => n + p.bubbles.length, 0)}개 말풍선`,
+    })
+    emit({
+      key: 'merge',
+      state: 'done',
+      detail: leg.merge ? `중복 ${leg.merge.removed}개 정리` : undefined,
+    })
   } else {
-    return NextResponse.json(
-      { error: '캡처 이미지 또는 대화 파일(.txt / .csv)을 넣어주세요' },
-      { status: 400 },
-    )
+    throw new Fail(400, { error: '캡처 이미지 또는 대화 파일(.txt / .csv)을 넣어주세요' })
   }
 
   /* ── 2. 비전 — 조각만 나간다 (캡처 전용) ──────────────────── */
@@ -394,7 +389,15 @@ export async function POST(req: Request) {
   // 플레이스홀더만 남아 있어서 정서를 읽을 대상이 아예 없다 — **경로 분기가
   // 아니라 대상 부재**다. 그래서 C급 지표가 LOCKED로 남는다(SPEC §5.2).
   let vision: VisionTrace | null = null
+  if (!useVision || mode !== 'capture') {
+    emit({
+      key: 'affect',
+      state: 'skip',
+      detail: mode === 'txt' ? '파일에는 그림이 없어요' : undefined,
+    })
+  }
   if (useVision && mode === 'capture') {
+    emit({ key: 'affect', state: 'run' })
     const tv = Date.now()
     const cropMeta: VisionTrace['crops'] = []
     const b64: string[] = []
@@ -472,12 +475,22 @@ export async function POST(req: Request) {
       if (typeof it.confidence === 'number') target.confidence = it.confidence
     })
     mark('vision', tv)
+    const read = items.filter(Boolean).length
+    emit({
+      key: 'affect',
+      state: error ? 'skip' : 'done',
+      detail: error ? '이번엔 못 읽었어요' : read ? `${read}개 읽음` : '읽을 그림이 없었어요',
+    })
   }
 
   /* ── 3. 임베딩 — 로컬 Ollama (두 경로 공통) ───────────────── */
   //
   // 꺼져 있으면 `semantic`이 null로 남고 동조율·말투 지표만 LOCKED가 된다 —
   // 헤드라인은 남은 축으로 계속 나온다(없는 축을 0으로 채우지 않는다).
+  // 임베딩은 화면에 따로 안 띄우고 '지표 계산' 안에 넣는다. 사용자에게는
+  // 같은 일이고, 여기만 7초씩 비어 있으면 멈춘 것처럼 보인다(실측).
+  emit({ key: 'metric', state: 'run' })
+
   let semantic: SemanticTrace | null = null
   let semanticValue: Semantic | null = null
   if (useEmbed) {
@@ -534,10 +547,20 @@ export async function POST(req: Request) {
     gaps,
   })
   const report = buildReport(corpus)
+  const okCount = isHardFloor(report)
+    ? 0
+    : Object.values(report.metrics).filter((m) => m.status === 'OK').length
+  emit({
+    key: 'metric',
+    state: 'done',
+    detail: isHardFloor(report) ? '대화가 조금 짧아요' : `${okCount}개 지표`,
+  })
 
   /* ── 5. LLM — 집계 숫자만 나간다 (두 경로 공통) ───────────── */
   let llm: LlmTrace | null = null
+  if (!useLlm || isHardFloor(report)) emit({ key: 'write', state: 'skip' })
   if (useLlm && !isHardFloor(report)) {
+    emit({ key: 'write', state: 'run' })
     const tl = Date.now()
     const block = buildMetricBlock(report, stage)
     const r = await interpret(report, stage)
@@ -554,6 +577,11 @@ export async function POST(req: Request) {
       verify: r.verify ?? null,
     }
     mark('llm', tl)
+    emit({
+      key: 'write',
+      state: 'done',
+      detail: r.source === 'llm' ? undefined : '기본 문장으로 대신했어요',
+    })
   }
 
   mark('total', t0)
@@ -578,13 +606,62 @@ export async function POST(req: Request) {
     timings,
   }
 
-  return NextResponse.json({
+  return {
     report,
     trace,
     hardFloor: isHardFloor(report),
     // 퍼센트 카드 — 계산은 서버에서, 근거는 통째로 함께 보낸다(SPEC §7.3.3)
     odds: isHardFloor(report) ? null : computeOdds(report),
+  }
+}
+
+/* ------------------------------ 스트리밍 ------------------------------ */
+
+/**
+ * NDJSON으로 단계를 흘린다 — 한 줄이 이벤트 하나.
+ *
+ * 처리 화면이 기다리는 시간을 채우려면 **실제 진행**을 받아야 한다.
+ * 시간 기반 연출로 만들면 OCR이 20초 걸리는데 화면은 3초에 끝난 것처럼
+ * 보인다. 이 프로젝트의 원칙("화면이 파이프라인을 재구현하지 않는다")과도
+ * 어긋난다. 그래서 도는 쪽이 진행을 알린다.
+ */
+export async function POST(req: Request) {
+  let form: FormData
+  try {
+    form = await req.formData()
+  } catch {
+    return NextResponse.json({ error: '폼 데이터를 읽지 못했습니다' }, { status: 400 })
+  }
+
+  const enc = new TextEncoder()
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (e: unknown) => controller.enqueue(enc.encode(`${JSON.stringify(e)}\n`))
+      try {
+        const out = await pipeline(form, (e) => send({ type: 'stage', ...e }))
+        send({ type: 'result', ...out })
+      } catch (e) {
+        // 스트림이 열린 뒤에는 상태 코드를 못 바꾼다. 실패도 이벤트로 보낸다.
+        if (e instanceof Fail) send({ type: 'error', status: e.status, ...e.body })
+        else send({ type: 'error', status: 500, error: e instanceof Error ? e.message : '실패' })
+      } finally {
+        controller.close()
+      }
+    },
+  })
+
+  return new Response(stream, {
+    headers: {
+      'content-type': 'application/x-ndjson; charset=utf-8',
+      'cache-control': 'no-store',
+      // 프록시가 모아서 한 번에 보내면 스트리밍이 무의미해진다
+      'x-accel-buffering': 'no',
+    },
   })
 }
+
+
+
+
 
 

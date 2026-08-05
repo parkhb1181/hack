@@ -1,6 +1,5 @@
-﻿import Analyzer from '@/app/_components/Analyzer'
+﻿import Flow from '@/app/_components/Flow'
 
 export default function Page() {
-  return <Analyzer />
+  return <Flow />
 }
-

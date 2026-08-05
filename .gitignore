@@ -37,3 +37,6 @@ fixtures/seeds/*.csv
 
 # 플러그인 실행 상태 (감사 로그·토큰 원장·스냅샷) — 소스가 아니다
 .bkit/
+
+# 데모 편의용 사본 (fixtures/seeds가 원본)
+public/demo_crush.txt

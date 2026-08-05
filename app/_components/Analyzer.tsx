@@ -81,18 +81,38 @@ export default function Analyzer({ devDefault = false }: { devDefault?: boolean 
       if (meName) fd.append('me', meName)
 
       try {
+        // 라우트가 NDJSON을 흘린다. 개발자 모드는 단계 표시가 따로 없으니
+        // 이벤트를 흘려보내고 result만 받는다.
         const r = await fetch('/api/analyze', { method: 'POST', body: fd })
-        const j = (await r.json()) as Ok | Fail
-        if (r.status === 409 && (j as Fail).needsSpeaker) {
-          setPick((j as Fail).speakers ?? [])
-          setMe((j as Fail).speakers?.[0]?.name ?? '')
-          return
-        }
-        if (!r.ok || 'error' in j) {
-          setErr((j as Fail).error ?? `실패 ${r.status}`)
-        } else {
-          setPick(null)
-          setRes(j as Ok)
+        const reader = r.body?.getReader()
+        if (!reader) throw new Error('응답을 읽지 못했습니다')
+        const dec = new TextDecoder()
+        let buf = ''
+
+        for (;;) {
+          const { done, value } = await reader.read()
+          if (done) break
+          buf += dec.decode(value, { stream: true })
+          const lines = buf.split('\n')
+          buf = lines.pop() ?? ''
+          for (const line of lines) {
+            if (!line.trim()) continue
+            const e = JSON.parse(line) as Record<string, unknown>
+            if (e.type === 'stage') continue
+            if (e.type === 'error') {
+              if (e.needsSpeaker) {
+                setPick(e.speakers as Array<{ name: string; count: number }>)
+                setMe((e.speakers as Array<{ name: string }>)[0]?.name ?? '')
+              } else {
+                setErr(String(e.error))
+              }
+              return
+            }
+            if (e.type === 'result') {
+              setPick(null)
+              setRes(e as unknown as Ok)
+            }
+          }
         }
       } catch (e) {
         setErr(e instanceof Error ? e.message : '요청 실패')

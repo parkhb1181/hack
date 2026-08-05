@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { CATALOG } from '@/lib/metrics/catalog'
-import { evaluateAll } from '@/lib/metrics/registry'
+import { evaluateAll, statusMessage } from '@/lib/metrics/registry'
 import { renderMetric } from '@/lib/stats/format'
 import { txtCorpus } from './helpers'
 
@@ -89,5 +89,26 @@ describe('실제 지표 전부 — JSON이 새어나가면 안 된다', () => {
       expect(Number.isFinite(out.me), `${key}.me`).toBe(true)
       expect(Number.isFinite(out.other), `${key}.other`).toBe(true)
     }
+  })
+})
+
+/**
+ * 잠긴 지표는 **어느 쪽 입력이 필요한지**를 말해야 한다.
+ * 한 문장으로 뭉치면 txt를 넣은 사람에게 "txt를 넣으세요"라고 말한다(실측).
+ */
+describe('잠김 안내 — SPEC §5.1', () => {
+  const spec = CATALOG.find((s) => s.key === 'emojiAffect')!
+  const other = CATALOG.find((s) => s.key === 'monthly')!
+
+  it('그림이 필요하면 캡처를 안내한다', () => {
+    const msg = statusMessage(spec, { status: 'LOCKED', missing: ['affect'] })
+    expect(msg).toContain('캡처')
+    expect(msg).not.toContain('전체 대화 파일')
+  })
+
+  it('시간축이 필요하면 전체 파일을 안내한다', () => {
+    const msg = statusMessage(other, { status: 'LOCKED', missing: ['date', 'continuity'] })
+    expect(msg).toContain('전체 대화 파일')
+    expect(msg).not.toContain('캡처')
   })
 })

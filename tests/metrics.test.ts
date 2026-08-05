@@ -135,7 +135,11 @@ describe('레지스트리 계약', () => {
 
   it('상태별 문구가 서로 다르다', () => {
     const spec = specOf('phraseGap')
+    // 잠김은 **어느 쪽 입력이 필요한지**로 갈린다 — 그림은 캡처에서만 나온다
     expect(statusMessage(spec, { status: 'LOCKED', missing: ['affect'] })).toBe(
+      '캡처를 올리면 열립니다',
+    )
+    expect(statusMessage(spec, { status: 'LOCKED', missing: ['date'] })).toBe(
       '전체 대화 파일을 넣으면 열립니다',
     )
     expect(
