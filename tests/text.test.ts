@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 
-import { countableLength, graphemeCount, hasEmoji, isEmojiOnly } from '@/lib/text'
+import { josa, countableLength, graphemeCount, hasEmoji, isEmojiOnly } from '@/lib/text'
 
 describe('grapheme 단위로 센다', () => {
   it.each([
@@ -58,5 +58,39 @@ describe('분량으로 셀 글자 수', () => {
     const emojiHeavy = '좋아 😃😃😃😃😃😃😃😃'
     const plain = '좋아'
     expect(countableLength(emojiHeavy)).toBe(countableLength(plain))
+  })
+})
+
+/**
+ * 조사를 문자열에 박아두면 반드시 틀린다 — 실측으로 두 번 나갔다.
+ *   `상대이 51% 보냈고`   (폴백 문장)
+ *   `세션가 더 필요합니다` (지표 카드)
+ */
+describe('조사 — 받침에 맞춰 붙인다', () => {
+  it.each([
+    ['상대', '상대가'],
+    ['당신', '당신이'],
+    ['세션', '세션이'],
+    ['개월', '개월이'],
+    ['메시지', '메시지가'],
+    ['화자', '화자가'],
+  ])('%s → %s', (word, want) => {
+    expect(josa(word, '이/가')).toBe(want)
+  })
+
+  it('다른 조사 쌍도 같은 규칙이다 — 앞이 항상 받침 있을 때', () => {
+    expect(josa('사진', '을/를')).toBe('사진을')
+    expect(josa('메시지', '을/를')).toBe('메시지를')
+    expect(josa('이모티콘', '은/는')).toBe('이모티콘은')
+    expect(josa('상대', '은/는')).toBe('상대는')
+    // 이 쌍만 받침 쪽이 `과`다 — 관용 표기 `와/과`로 쓰면 뒤집힌다
+    expect(josa('이모티콘', '과/와')).toBe('이모티콘과')
+    expect(josa('상대', '과/와')).toBe('상대와')
+  })
+
+  it('한글이 아니면 받침 없는 쪽으로 둔다', () => {
+    // 숫자·영문은 읽는 방식이 갈려 받침을 단정할 수 없다
+    expect(josa('OCR', '이/가')).toBe('OCR가')
+    expect(josa('120', '이/가')).toBe('120가')
   })
 })

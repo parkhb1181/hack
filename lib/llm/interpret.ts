@@ -22,8 +22,14 @@ import { verify, type VerifyResult } from './verify'
  */
 export const LLM_MODEL = candidates('text')[0]
 
-/** 12초 안에 안 오면 폴백 — MODELS §6 */
+/** 12초 안에 안 오면 폴백 — MODELS §6. 후보 전부를 합친 예산이다 */
 export const TIMEOUT_MS = 12_000
+
+/**
+ * 모델 하나당 제한. 전체 예산의 절반 아래로 둬서 **최소 두 후보는 시도된다.**
+ * 하나만 두면 첫 모델이 예산을 다 먹고 폴백으로 떨어진다(실측).
+ */
+export const PER_MODEL_MS = 5_000
 
 /** MODELS §4.2 — 문구는 그 문서에서만 바꾼다 */
 export const SYSTEM_PROMPT = `당신은 대화 지표 리포트의 마지막 한 문단을 쓴다.
@@ -149,6 +155,7 @@ export type Interpretation = {
 async function ask(block: string, stage: Stage, signal?: AbortSignal): Promise<GeminiOk> {
   return callGemini('text', {
     signal,
+    perAttemptMs: PER_MODEL_MS,
     body: {
       systemInstruction: {
         parts: [{ text: `${SYSTEM_PROMPT}\n\n${STAGE_LINE[stage]}` }],

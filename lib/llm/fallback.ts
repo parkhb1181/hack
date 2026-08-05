@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 폴백 템플릿 — MODELS.md §6
  *
  * 12초 타임아웃 또는 §5 검증 실패 시 쓴다. 개발자 토글로 강제할 수 있다(데모용).
@@ -9,10 +9,15 @@
 import type { Report, Stage } from '@/lib/types'
 import type { Pair } from '@/lib/metrics/basic'
 import { derivedFigures } from './figures'
+import { josa } from '@/lib/text'
+
+/** 당신이 / 상대가 — 조사는 받침을 보고 고른다(lib/text.ts) */
+export const meOther = (w: '당신' | '상대') => josa(w, '이/가')
 
 function ok<T>(r: Report['metrics'][string] | undefined): T | null {
   return r && r.status === 'OK' ? (r.value as T) : null
 }
+
 
 /**
  * 헤드라인 축만 인용한다 — 두 모드가 같은 문장을 쓴다(§6.1).
@@ -34,7 +39,7 @@ export function fallbackSentence(report: Report, _stage: Stage = 'unknown'): str
   if (count && f.msgSharePct != null && f.msgShareOtherPct != null) {
     const mine = f.msgSharePct >= 50
     parts.push(
-      `메시지는 ${mine ? '당신' : '상대'}이 ${mine ? f.msgSharePct : f.msgShareOtherPct}% 보냈고,`,
+      `메시지는 ${meOther(mine ? '당신' : '상대')} ${mine ? f.msgSharePct : f.msgShareOtherPct}% 보냈고,`,
     )
   }
 
@@ -66,7 +71,7 @@ export function fallbackSentence(report: Report, _stage: Stage = 'unknown'): str
       : ''
   if (init && f.initiationTopPct != null) {
     parts.push(
-      `${decay}먼저 말을 건 쪽은 ${init.me >= init.other ? '당신' : '상대'}이 ${f.initiationTopPct}%입니다.`,
+      `${decay}먼저 말을 건 쪽은 ${meOther(init.me >= init.other ? '당신' : '상대')} ${f.initiationTopPct}%입니다.`,
     )
   } else if (decay) {
     parts.push(`${f.changeMonth}월부터 대화량이 ${f.changeDropPct}% 줄었습니다.`)
@@ -81,3 +86,5 @@ export function hardFloorSentence(singleFact: string | null): string {
     ? `이 대화에서 확실히 말할 수 있는 것 하나 — ${singleFact}`
     : '판독할 만큼의 대화가 모이지 않았습니다.'
 }
+
+

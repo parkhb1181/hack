@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildMetricBlock, STAGE_LINE, SYSTEM_PROMPT } from '@/lib/llm/interpret'
-import { fallbackSentence, hardFloorSentence } from '@/lib/llm/fallback'
+import { fallbackSentence, hardFloorSentence, meOther } from '@/lib/llm/fallback'
 import {
   BANNED_WORDS,
   MAX_SENTENCES,
@@ -182,6 +182,13 @@ describe('폴백 — §6', () => {
     expect(v.violations).toEqual([])
   })
 
+  /** 실측: "상대이 51% 보냈고"가 화면에 나갔다 */
+  it('주격 조사를 받침에 맞춘다', () => {
+    expect(meOther('당신')).toBe('당신이')
+    expect(meOther('상대')).toBe('상대가')
+    expect(fallbackSentence(R, 'crush')).not.toContain('상대이')
+  })
+
   it('가용하지 않은 축은 언급하지 않는다 — §6.4', () => {
     // seed는 임베딩·C급이 없다
     expect(text).not.toContain('이모티콘의 정서')
@@ -216,5 +223,7 @@ describe('폴백 — §6', () => {
     expect(hardFloorSentence('답장은 상대가 더 느립니다')).toContain('답장은')
   })
 })
+
+
 
 

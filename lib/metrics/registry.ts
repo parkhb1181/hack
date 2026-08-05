@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 지표 레지스트리 — SPEC.md §5.1
  *
  * `LOCKED`와 `INSUFFICIENT`를 구분한다.
@@ -6,6 +6,7 @@
  */
 
 import type { Corpus, MetricResult, MetricSpec } from '@/lib/types'
+import { josa } from '@/lib/text'
 
 export function evaluate(spec: MetricSpec, c: Corpus): MetricResult {
   const missing = spec.requires.filter((f) => !c.availableFields.has(f))
@@ -35,6 +36,8 @@ export function statusMessage(spec: MetricSpec, r: MetricResult): string | null 
     case 'LOCKED':
       return '전체 대화 파일을 넣으면 열립니다'
     case 'INSUFFICIENT':
-      return `${spec.sampleUnit}가 더 필요합니다 (${Math.floor(r.have)} / ${r.need})`
+      // 조사를 박아두면 `세션가`, `개월가`가 나간다 — 받침을 보고 고른다
+      return `${josa(spec.sampleUnit, '이/가')} 더 필요합니다 (${Math.floor(r.have)} / ${r.need})`
   }
 }
+

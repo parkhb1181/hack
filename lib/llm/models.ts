@@ -66,7 +66,16 @@ export function candidates(kind: 'text' | 'vision'): string[] {
 
 export type GeminiCall = {
   body: Record<string, unknown>
+  /** 전체 예산. 이걸 넘기면 폴백을 더 시도하지 않는다 */
   signal?: AbortSignal
+  /**
+   * **모델 하나당** 제한(ms).
+   *
+   * 전체 예산 하나만 두면 첫 모델이 느릴 때 그게 예산을 다 먹고 나머지 후보가
+   * **시도조차 못 된다** — 실측: 12초 예산에서 첫 모델이 12초를 쓰고 폴백 문장이
+   * 나갔다. 폴백 체인을 만든 이유가 사라진다.
+   */
+  perAttemptMs?: number
 }
 
 export type GeminiOk = {
@@ -90,16 +99,31 @@ export async function callGemini(kind: 'text' | 'vision', call: GeminiCall): Pro
   let last = ''
 
   for (const model of list) {
+    // 전체 예산이 이미 끝났으면 더 시도하지 않는다
+    if (call.signal?.aborted) break
+
+    const perAttempt = call.perAttemptMs ? AbortSignal.timeout(call.perAttemptMs) : null
+    const signal = call.signal
+      ? perAttempt
+        ? AbortSignal.any([call.signal, perAttempt])
+        : call.signal
+      : (perAttempt ?? undefined)
+
     let res: Response
     try {
       res = await fetch(`${ENDPOINT}/models/${model}:generateContent?key=${encodeURIComponent(key)}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        signal: call.signal,
+        signal,
         body: JSON.stringify(call.body),
       })
     } catch (e) {
-      // 타임아웃·중단은 모델 문제가 아니다. 다음 모델도 마찬가지이므로 멈춘다.
+      // 이 모델만 느린 것일 수 있다. 전체 예산이 남아 있으면 다음 후보로 간다.
+      if (call.signal && !call.signal.aborted) {
+        skipped.push({ model, why: '시간 초과' })
+        last = '시간 초과'
+        continue
+      }
       throw e
     }
 

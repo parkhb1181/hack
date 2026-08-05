@@ -48,6 +48,27 @@ export function isEmojiOnly(s: string): boolean {
  * 이모지는 길이에서 제외한다 — 정서 신호이지 분량이 아니다.
  * 이모지만 있는 메시지는 0이 된다.
  */
+/**
+ * 한국어 조사를 앞 글자의 받침에 맞춰 붙인다.
+ *
+ * 조사를 문자열에 박아두면 **반드시 틀린다.** 실측으로 두 번 나갔다 —
+ * `상대이 51% 보냈고`(폴백 문장), `세션가 더 필요합니다`(지표 카드).
+ * 대상 단어가 몇 개뿐일 때도 규칙으로 두는 편이 낫다. 라벨이 늘어나면
+ * 같은 실수가 다시 난다.
+ *
+ * 숫자·영문으로 끝나면 받침 여부를 알 수 없으므로 받침 없는 쪽으로 둔다.
+ *
+ * ⚠️ **앞이 항상 받침 있을 때다.** `과/와`를 관용 표기인 `와/과`로 쓰면
+ * 뒤집힌다 — 이 쌍만 받침 쪽이 `과`이기 때문이다(실측으로 `상대과`가 나왔다).
+ */
+export function josa(word: string, pair: '이/가' | '을/를' | '은/는' | '과/와'): string {
+  const [withBatchim, without] = pair.split('/')
+  const last = word.charCodeAt(word.length - 1)
+  const isHangul = last >= 0xac00 && last <= 0xd7a3
+  const hasBatchim = isHangul && (last - 0xac00) % 28 !== 0
+  return `${word}${hasBatchim ? withBatchim : without}`
+}
+
 export function countableLength(s: string): number {
   const stripped = s.replace(
     /[\p{Extended_Pictographic}\p{Emoji_Component}\p{Emoji_Modifier}️‍]/gu,

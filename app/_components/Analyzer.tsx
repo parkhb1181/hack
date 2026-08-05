@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 /**
  * 화면 하나에 두 모드가 산다.
@@ -13,6 +13,7 @@ import { maskTrace, type Trace } from '@/lib/trace'
 import { CATALOG } from '@/lib/metrics/catalog'
 import { bandLabel, WINDOW_MIN_FOR_NUMBER } from '@/lib/stats/headline'
 import type { Odds } from '@/lib/stats/odds'
+import { renderMetric } from '@/lib/stats/format'
 import { HARD_FLOOR } from '@/lib/stats/sample'
 import type { Band, HardFloor, Report, Stage } from '@/lib/types'
 
@@ -428,21 +429,67 @@ function OddsCards({ odds }: { odds: Odds[] }) {
   )
 }
 
+/* ------------------------------ 지표 카드 ------------------------------ */
+
+/** 두 값의 상대 비율로 막대를 채운다 — 어느 쪽이 큰지가 한눈에 보여야 한다 */
+function PairBar({ me, other }: { me: number; other: number }) {
+  const a = Math.abs(me)
+  const b = Math.abs(other)
+  const sum = a + b
+  const left = sum === 0 ? 50 : (a / sum) * 100
+  return (
+    <div className="pairbar">
+      <div className="side me" style={{ width: `${left}%` }} />
+      <div className="side other" style={{ width: `${100 - left}%` }} />
+    </div>
+  )
+}
+
 function Metrics({ report }: { report: Report }) {
   return (
     <div className="cards">
-      {Object.entries(report.metrics).map(([k, r]) => (
-        <div key={k} className="card" data-status={r.status}>
-          <div className="k">{LABEL.get(k) ?? k}</div>
-          <div className="v">
-            {r.status === 'OK'
-              ? JSON.stringify(r.value)
-              : r.status === 'LOCKED'
-                ? `잠김 — ${r.missing.join(', ')} 필요`
-                : `표본 부족 — ${r.have}/${r.need}`}
+      {Object.entries(report.metrics).map(([k, r]) => {
+        const label = LABEL.get(k) ?? k
+        if (r.status !== 'OK') {
+          return (
+            <div key={k} className="card" data-status={r.status}>
+              <div className="k">{label}</div>
+              <div className="v">
+                {r.status === 'LOCKED'
+                  ? `잠김 — ${r.missing.join(', ')} 필요`
+                  : `표본 부족 — ${r.have}/${r.need}`}
+              </div>
+            </div>
+          )
+        }
+
+        const out = renderMetric(k, r.value)
+        return (
+          <div key={k} className="card" data-status="OK">
+            <div className="k">{label}</div>
+            {out.kind === 'pair' ? (
+              <>
+                <div className="duo">
+                  <span>
+                    <b>{out.me}</b>
+                    {out.unit}
+                    <em>나</em>
+                  </span>
+                  <span>
+                    <b>{out.other}</b>
+                    {out.unit}
+                    <em>상대</em>
+                  </span>
+                </div>
+                <PairBar me={out.me} other={out.other} />
+                {out.note && <div className="note-s">{out.note}</div>}
+              </>
+            ) : (
+              <div className="v">{out.text}</div>
+            )}
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -997,3 +1044,4 @@ function LlmView({ trace }: { trace: Trace }) {
     </>
   )
 }
+

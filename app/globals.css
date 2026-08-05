@@ -239,6 +239,61 @@ input[type='file'] {
   font-size: 11px;
 }
 
+/* 나 / 상대 두 값을 나란히 — 어느 쪽이 큰지가 먼저 보여야 한다 */
+.duo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 6px;
+  gap: 12px;
+}
+
+.duo span {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+}
+
+.duo span:last-child {
+  flex-direction: row-reverse;
+}
+
+.duo b {
+  font-size: 21px;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.duo em {
+  font-style: normal;
+  color: var(--dim);
+  font-size: 10px;
+  margin: 0 2px;
+}
+
+/* 채도 대신 명도로 좌우를 가른다 — 검흰색만 쓴다 */
+.pairbar {
+  display: flex;
+  height: 3px;
+  margin-top: 8px;
+  background: var(--line);
+}
+
+.pairbar .side.me {
+  background: var(--fg);
+}
+
+.pairbar .side.other {
+  background: var(--faint);
+}
+
+.note-s {
+  color: var(--faint);
+  font-size: 10px;
+  margin-top: 7px;
+  line-height: 1.45;
+}
+
 /* ------------------------------ 개발자 모드 ------------------------------ */
 
 section.dev {
