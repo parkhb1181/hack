@@ -1,0 +1,19 @@
+{
+  "messages": 56,
+  "infoUnits": 48.7,
+  "windowFilled": 56,
+  "fields": [
+    "affect",
+    "text",
+    "time",
+    "type",
+    "who"
+  ],
+  "axes": {
+    "msgCount": -0.64,
+    "msgLength": -0.55,
+    "question": -1
+  },
+  "tilt": -73,
+  "band": "strong_other"
+}

@@ -1,0 +1,39 @@
+node_modules/
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+.env
+.env.local
+.env*.local
+
+.DS_Store
+*.pem
+npm-debug.log*
+
+# 실제 대화 파일은 절대 커밋하지 않는다 (PRD §7 프라이버시)
+fixtures/real/
+*.private.txt
+
+# Python OCR
+.venv-ocr/
+.venv-paddle/
+__pycache__/
+
+# 렌더 산출물 (재생성 가능)
+fixtures/render/*.png
+fixtures/render/*.ocr.json
+
+# FastAPI 서비스 캐시
+ocr_service/__pycache__/
+
+# 참고용 외부 자료 (우리 코드가 아니다)
+plus/
+
+# 시드 txt에서 만들어내는 CSV (재생성 가능)
+fixtures/seeds/*.csv
+
+# 플러그인 실행 상태 (감사 로그·토큰 원장·스냅샷) — 소스가 아니다
+.bkit/

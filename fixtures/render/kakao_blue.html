@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<title>kakao</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { width: 720px; background: #b2c7d9;
+         font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+         padding: 18px 14px; }
+  .divider { text-align: center; margin: 18px 0; }
+  .divider span { background: #8fa6b8; color: #ffffff;
+                  font-size: 15px; padding: 5px 14px; border-radius: 14px; }
+  .block { display: flex; margin-bottom: 14px; }
+  .block.other { justify-content: flex-start; }
+  .block.me { justify-content: flex-end; }
+  .avatar { width: 42px; height: 42px; border-radius: 14px; background: #cfd8e0;
+            flex: 0 0 42px; margin-right: 9px; }
+  .stack { display: flex; flex-direction: column; max-width: 68%; }
+  .name { font-size: 15px; color: #4a5a68; margin-bottom: 5px; }
+  /* 말풍선 사이 간격 — 한 말풍선 안의 줄 간격보다 확실히 넓다 */
+  .row { display: flex; align-items: flex-end; gap: 6px; margin-bottom: 9px; }
+  .row.me { justify-content: flex-end; }
+  .row.other { justify-content: flex-start; }
+  .bubble { border-radius: 14px; padding: 9px 12px; font-size: 19px; line-height: 1.32; }
+  .row.me .bubble { background: #7b96d4; color: #ffffff; }
+  .row.other .bubble { background: #ffffff; color: #1a1a1a; }
+  .sticker { width: 128px; height: 128px; border-radius: 10px;
+             background: repeating-linear-gradient(45deg, #e9a6b8 0 14px, #f2c7d2 14px 28px); }
+  .time { font-size: 13px; color: #7a8a99; white-space: nowrap; padding-bottom: 3px; }
+</style></head>
+<body><div class="divider"><span>2026년 8월 4일 화요일</span></div><div class="block me"><div class="stack"><div class="row me"><div class="bubble"><div class="line">오빠</div></div></div><div class="row me"><span class="time">오후 11:58</span><div class="bubble"><div class="line">뭐해?</div></div></div></div></div><div class="block other"><div class="avatar"></div><div class="stack"><div class="name">민준오빠</div><div class="row other"><div class="bubble"><div class="line">나 집에서 쉬고 있어!</div></div></div><div class="row other"><div class="bubble"><div class="line">어제 회식 타격이 너무 커서ㅠㅠㅋㅋ</div></div><span class="time">오후 11:59</span></div></div></div><div class="block me"><div class="stack"><div class="row me"><span class="time">오전 12:03</span><div class="bubble"><div class="line">아 진짜 괜찮은거야</div><div class="line">걱정되서 그래</div></div></div></div></div><div class="block other"><div class="avatar"></div><div class="stack"><div class="name">민준오빠</div><div class="row other"><div class="sticker" aria-hidden="true"></div><span class="time">오전 12:05</span></div><div class="row other"><div class="bubble"><div class="line">아니야 지금은 괜찮아ㅎㅎ</div></div></div><div class="row other"><div class="bubble"><div class="line">너는 뭐해?</div></div><span class="time">오전 12:06</span></div></div></div><div class="block me"><div class="stack"><div class="row me"><span class="time">오전 12:12</span><div class="bubble"><div class="line">나도 이제 자려고</div><div class="line">내일 일찍 나가야 해서</div></div></div></div></div></body></html>

@@ -1,0 +1,16 @@
+{
+  "msgCount": "OK",
+  "msgLength": "OK",
+  "questionRate": "OK",
+  "syncAsym": "LOCKED:embedding",
+  "styleSep": "LOCKED:embedding",
+  "replyDist": "OK",
+  "initiation": "OK",
+  "noReply": "OK",
+  "monthly": "OK",
+  "changePoint": "INSUFFICIENT:8/12",
+  "phraseGap": "INSUFFICIENT:197/200",
+  "deletedCount": "OK",
+  "emojiAffect": "LOCKED:affect",
+  "emojiVariety": "LOCKED:affect"
+}

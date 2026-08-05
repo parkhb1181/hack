@@ -1,0 +1,56 @@
+[
+  {
+    "who": "me",
+    "type": "text",
+    "text": "오빠",
+    "time": null
+  },
+  {
+    "who": "me",
+    "type": "text",
+    "text": "뭐해?",
+    "time": "23:58"
+  },
+  {
+    "who": "other",
+    "type": "text",
+    "text": "나 집에서 쉬고 있어!",
+    "time": null
+  },
+  {
+    "who": "other",
+    "type": "text",
+    "text": "어제 회식 타격이 너무 커서ㅠㅠㅋㅋ",
+    "time": "23:59"
+  },
+  {
+    "who": "me",
+    "type": "text",
+    "text": "아 진짜 괜찮은거야\n걱정되서 그래",
+    "time": "00:03"
+  },
+  {
+    "who": "other",
+    "type": "emoticon",
+    "text": null,
+    "time": "00:05"
+  },
+  {
+    "who": "other",
+    "type": "text",
+    "text": "아니야 지금은 괜찮아ㅎㅎ",
+    "time": null
+  },
+  {
+    "who": "other",
+    "type": "text",
+    "text": "너는 뭐해?",
+    "time": "00:06"
+  },
+  {
+    "who": "me",
+    "type": "text",
+    "text": "나도 이제 자려고\n내일 일찍 나가야 해서",
+    "time": "00:12"
+  }
+]

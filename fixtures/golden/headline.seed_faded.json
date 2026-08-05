@@ -1,0 +1,12 @@
+{
+  "axes": {
+    "msgCount": -0.02,
+    "msgLength": 0,
+    "question": 0.28
+  },
+  "tilt": 9,
+  "band": "even",
+  "axesUsed": 3,
+  "axesTotal": 4,
+  "precisionReduced": false
+}

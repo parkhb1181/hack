@@ -1,0 +1,21 @@
+{
+  "totalMessages": 500,
+  "byWho": {
+    "me": 259,
+    "other": 241
+  },
+  "sessions": 60,
+  "bursts": {
+    "me": 112,
+    "other": 112
+  },
+  "media": {
+    "photo": 27,
+    "emoticon": 23,
+    "deleted": 2
+  },
+  "multiline": 8,
+  "midnightMessages": 16,
+  "unparsedRecords": 0,
+  "infoUnits": 344.6
+}
