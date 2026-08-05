@@ -174,14 +174,27 @@ describe('프롬프트 — 문서와 어긋나면 안 된다', () => {
   })
 
   /**
-   * 길이만 줄이면 지표 낭독이 그대로 온다 — 한 줄로 줄이랬더니
-   * `메시지 점유율은 당신 57%, 상대 43%입니다`가 왔다. 그래서 프롬프트가
-   * 숫자를 막고 나쁜 예를 직접 보여준다.
+   * 두 번 실패한 자리다.
+   *
+   * 1. 한 줄로 줄이랬더니 `메시지 점유율은 당신 57%…`가 왔다 — 낭독.
+   * 2. 숫자를 막았더니 `시소 타듯 번갈아 가며 주고받고 있네`가 왔다 —
+   *    맞는 말인데 안 웃긴다. "놀리지 않는다"고 써 둔 줄이 범인이었다.
+   *
+   * 그래서 프롬프트가 **실패 예를 직접 들고 있다.** 재미없는 문장을
+   * 보여주지 않으면 모델은 그게 실패인 줄 모른다.
    */
-  it('지표 낭독을 막는다', () => {
-    expect(SYSTEM_PROMPT).toContain('숫자를 읽어 주지 마라')
-    expect(SYSTEM_PROMPT).toContain('나쁜 예')
-    expect(SYSTEM_PROMPT).toContain('좋은 예')
+  it('낭독과 밋밋함을 둘 다 실패 예로 든다', () => {
+    expect(SYSTEM_PROMPT).toContain('재미없으면 실패다')
+    expect(SYSTEM_PROMPT).toContain('이러면 실패')
+    expect(SYSTEM_PROMPT).toContain('이러면 성공')
+    expect(SYSTEM_PROMPT).toContain('점유율') // 낭독 실패 예
+    expect(SYSTEM_PROMPT).toContain('시소') // 밋밋함 실패 예
+  })
+
+  /** 놀려도 되지만 사람을 깎지는 않는다 — 이 경계가 빠지면 조롱이 된다 */
+  it('놀리는 대상을 상황으로 못 박는다', () => {
+    expect(SYSTEM_PROMPT).toContain('사람을 깎아내리지 마라')
+    expect(SYSTEM_PROMPT).not.toContain('놀리지 않고')
   })
 })
 
@@ -217,8 +230,14 @@ describe('폴백 — §6', () => {
     expect(text).not.toContain('점유율')
   })
 
-  it('한 문장이다 — 상한과 같다', () => {
-    expect(countSentences(text)).toBe(1)
+  /**
+   * 드립은 "치고 받는" 두 박자가 붙을 때가 있다
+   * (`물음표는 죄다 네 몫이네. 무슨 면접 보냐?`). 하나로 못 박으면 그게
+   * 통째로 걸린다. 대신 상한을 넘으면 안 된다 — 셋부터는 문단이다.
+   */
+  it('상한을 넘지 않는다', () => {
+    expect(countSentences(text)).toBeLessThanOrEqual(MAX_SENTENCES)
+    expect(countSentences(text)).toBeGreaterThan(0)
   })
 
   it('축이 하나도 없으면 균형 문구로 간다', () => {

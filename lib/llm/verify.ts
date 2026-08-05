@@ -108,12 +108,14 @@ export function verifyWords(text: string): Violation[] {
 }
 
 /**
- * 한 문장 — MODELS §4.2.
+ * 두 문장 — MODELS §4.2.
  *
- * 화면이 쓰는 것이 한 줄이라 상한도 하나다. 세 문장을 허용하면 카드가
- * 이미 말한 숫자를 다시 읽어주는 문단이 돌아온다(실측).
+ * 세 문장을 허용하면 카드가 이미 말한 숫자를 다시 읽어주는 문단이 돌아온다
+ * (실측). 그렇다고 하나로 못 박으면 드립의 두 박자가 잘린다 —
+ * `물음표는 죄다 네 몫이네. 무슨 면접 보냐?`가 통째로 폴백됐다.
+ * 치고 받는 데까지가 한 줄이고, 그 다음부터가 문단이다.
  */
-export const MAX_SENTENCES = 1
+export const MAX_SENTENCES = 2
 
 export function countSentences(text: string): number {
   return text
