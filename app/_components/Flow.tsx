@@ -571,6 +571,15 @@ function ResultView({
   onMetrics: () => void
 }) {
   const scrollRef = useDragScroll<HTMLDivElement>()
+  /**
+   * 게이지를 끌어 밴드별 문구를 훑어보는 미리보기.
+   *
+   * 데모에서 82%가 어떻게 읽히는지 보려면 그런 대화를 구해와야 하는데,
+   * 그게 안 되니 손으로 끌 수 있게 뒀다. **끌면 화면이 미리보기라고 말한다** —
+   * 안 그러면 데모 중에 진짜 결과로 오해한다.
+   */
+  const [preview, setPreview] = useState<number | null>(null)
+  const gaugeRef = useRef<HTMLDivElement>(null)
   const { report, trace, hardFloor, odds } = res
 
   if (hardFloor) {
@@ -604,8 +613,18 @@ function ResultView({
 
   const r = report as Report
   const main = odds?.find((o) => o.key === 'reciprocity') ?? odds?.[0]
-  const pct = main ? main.percent : 50
+  const real = main ? main.percent : 50
+  const pct = preview ?? real
   const h = r.headline
+
+  /** 게이지 위 좌표 → 0~100. 손잡이·트랙 어디를 눌러도 잡힌다 */
+  const seek = (clientX: number) => {
+    const el = gaugeRef.current
+    if (!el) return
+    const box = el.getBoundingClientRect()
+    const v = ((clientX - box.left) / box.width) * 100
+    setPreview(Math.max(0, Math.min(100, Math.round(v))))
+  }
 
   return (
     <div className="body">
@@ -621,11 +640,33 @@ function ResultView({
         <div className="hero">
           <div className="cap">고백 성공 확률</div>
           <div className="num">
-            {main?.coarse ? pct : pct.toFixed(0)}
+            {Math.round(pct)}
             <span>%</span>
           </div>
           <div className="phrase">{phraseOf(pct)}</div>
-          <div className="gauge">
+
+          {/* 트랙 어디를 눌러도 잡히고, 끌면 따라온다 */}
+          <div
+            className="gauge live"
+            ref={gaugeRef}
+            role="slider"
+            tabIndex={0}
+            aria-label="확률 미리보기"
+            aria-valuenow={Math.round(pct)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            onPointerDown={(e) => {
+              e.currentTarget.setPointerCapture(e.pointerId)
+              seek(e.clientX)
+            }}
+            onPointerMove={(e) => {
+              if (e.currentTarget.hasPointerCapture(e.pointerId)) seek(e.clientX)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowLeft') setPreview(Math.max(0, Math.round(pct) - 1))
+              if (e.key === 'ArrowRight') setPreview(Math.min(100, Math.round(pct) + 1))
+            }}
+          >
             <i style={{ width: `${pct}%` }} />
             <b style={{ left: `${pct}%` }} />
           </div>
@@ -633,10 +674,18 @@ function ResultView({
             <span>0</span>
             <span>100</span>
           </div>
-          <div className="chip">
-            메시지 {r.windowFilled}개 · {trace.mode === 'capture' ? '캡처' : '전체 파일'} 구간 ·{' '}
-            {h.axesTotal}개 축 중 {h.axesUsed}개로 산출
-          </div>
+
+          {preview == null ? (
+            <div className="chip">
+              메시지 {r.windowFilled}개 · {trace.mode === 'capture' ? '캡처' : '전체 파일'} 구간 ·{' '}
+              {h.axesTotal}개 축 중 {h.axesUsed}개로 산출
+            </div>
+          ) : (
+            // 값을 손으로 옮긴 상태다. 진짜 결과로 오해하면 안 되므로 명시한다.
+            <button className="chip preview" onClick={() => setPreview(null)}>
+              미리보기 중 · 실제 값 {Math.round(real)}% — 되돌리기
+            </button>
+          )}
         </div>
 
         <div className="tiltcard">

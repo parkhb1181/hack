@@ -722,12 +722,52 @@ p.lead {
   transition: left 0.8s ease;
 }
 
+/* 끌 수 있는 게이지 — 손잡이를 키우고 잡는 영역을 넓힌다 */
+.gauge.live {
+  cursor: grab;
+  touch-action: none;
+}
+
+.gauge.live:active {
+  cursor: grabbing;
+}
+
+/* 트랙이 11px이라 그대로는 잡기 어렵다. 위아래로 보이지 않는 여유를 준다 */
+.gauge.live::after {
+  content: '';
+  position: absolute;
+  inset: -12px 0;
+}
+
+.gauge.live b {
+  transition: none;
+}
+
+.gauge.live:focus-visible {
+  outline: 2px solid var(--hot);
+  outline-offset: 6px;
+}
+
 .ends {
   display: flex;
   justify-content: space-between;
   font-size: 11.5px;
   color: var(--faint);
   padding: 0 6px;
+}
+
+/* 손으로 옮긴 상태 — 진짜 결과와 구분되어야 한다 */
+.chip.preview {
+  background: var(--soft-2);
+  color: var(--deep);
+  font-weight: 700;
+  border: 1px dashed #ffb3c2;
+}
+
+.chip.preview:hover {
+  background: var(--hot);
+  color: #fff;
+  border-color: var(--hot);
 }
 
 .chip {
