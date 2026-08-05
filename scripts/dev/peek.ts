@@ -30,7 +30,7 @@ if (isCsv) {
 } else {
   const r = parseTxt(body)
   if (isUnsupported(r)) {
-    console.log(`형식 미지원: ${r.unsupported} (iOS는 CSV로 내보내야 합니다)`)
+    console.log(`형식 미지원: ${r.unsupported}`)
     process.exit(1)
   }
   p = r

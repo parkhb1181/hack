@@ -266,10 +266,12 @@ async function parseTextFile(
     p = r
   } else {
     const r = parseTxt(body)
+    // 이제 PC·안드로이드·iOS를 모두 읽는다. 이 분기는 남지 않는다 —
+    // 형식이 안 맞으면 아래 `raw.length === 0`에서 걸린다.
     if (isUnsupported(r)) {
       throw new Fail(422, {
             error:
-              '아이폰에서 내보낸 파일이네요. 아이폰은 txt 대신 csv로 나와요 — 그 파일을 올려주세요.',
+              '파일 형식을 알아보지 못했어요. 카카오톡에서 내보낸 원본이 맞는지 확인해 주세요.',
           })
     }
     p = r

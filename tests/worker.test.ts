@@ -54,13 +54,13 @@ describe('반환 계약 — 원문을 다 넘기지 않는다', () => {
 })
 
 describe('거절 경로', () => {
-  it('iOS 포맷은 거절한다', () => {
+  it('iOS 포맷도 읽는다 — 예전에는 거절했다', () => {
     const ios = [
       '하늘 님과 카카오톡 대화',
       '2026. 7. 11. 오전 10:53, 하늘 : 안녕',
       '2026. 7. 11. 오전 10:54, 민서 : 어',
     ].join('\r\n')
-    expect(parseFileText(ios)).toEqual({ kind: 'rejected', reason: 'ios' })
+    expect(parseFileText(ios).kind).toBe('done')
   })
 
   it('빈 파일은 거절한다', () => {

@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest'
 import { CATALOG } from '@/lib/metrics/catalog'
 import { evaluateAll, statusMessage } from '@/lib/metrics/registry'
 import { renderMetric } from '@/lib/stats/format'
+import { SPREAD_GAIN } from '@/lib/stats/odds'
 import { txtCorpus } from './helpers'
 
 describe('표시 변환', () => {
@@ -110,5 +111,41 @@ describe('잠김 안내 — SPEC §5.1', () => {
     const msg = statusMessage(other, { status: 'LOCKED', missing: ['date', 'continuity'] })
     expect(msg).toContain('전체 대화 파일')
     expect(msg).not.toContain('캡처')
+  })
+})
+
+/**
+ * 퍼센트가 50 근처로 뭉치면 카드가 대화를 구별해 말하지 못한다.
+ * 실측: 대화 6종에서 `상대 마음`이 22점밖에 안 벌어졌다(기울기는 60점).
+ */
+describe('퍼센트 퍼짐 — SPEC §7.3.3', () => {
+  const at = (raw: number) => 50 + 50 * Math.tanh((raw - 0.5) * SPREAD_GAIN)
+
+  it('0~100을 벗어나지 않는다', () => {
+    for (const raw of [0, 0.1, 0.5, 0.9, 1]) {
+      const v = at(raw)
+      expect(v).toBeGreaterThanOrEqual(0)
+      expect(v).toBeLessThanOrEqual(100)
+    }
+  })
+
+  it('가운데는 그대로 50이다', () => {
+    expect(at(0.5)).toBeCloseTo(50, 6)
+  })
+
+  it('단조다 — 순서가 바뀌면 안 된다', () => {
+    const xs = [0.2, 0.35, 0.45, 0.5, 0.55, 0.7, 0.85]
+    const ys = xs.map(at)
+    for (let i = 1; i < ys.length; i++) expect(ys[i]).toBeGreaterThan(ys[i - 1])
+  })
+
+  it('차이를 벌린다 — 이게 존재 이유', () => {
+    // 배율 없이는 0.42~0.57이 42~57(15점). 배율을 넣으면 더 벌어져야 한다
+    expect(at(0.57) - at(0.42)).toBeGreaterThan(15)
+  })
+
+  it('극단에서 잘리지 않고 완만해진다', () => {
+    // 0.9와 1.0의 간격이 0.5와 0.6의 간격보다 좁다 (포화)
+    expect(at(1.0) - at(0.9)).toBeLessThan(at(0.6) - at(0.5))
   })
 })

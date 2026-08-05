@@ -26,8 +26,29 @@ export const AN_SYS =
   /^(\d{4})년 (\d{1,2})월 (\d{1,2})일 (오전|오후) (\d{1,2}):(\d{2}), (.+)$/
 export const AN_DATE = /^(\d{4})년 (\d{1,2})월 (\d{1,2})일 (오전|오후) (\d{1,2}):(\d{2})$/
 
-/** iOS 감지용 — 지원하지 않는다(PRD §5 Out) */
-export const IOS_HINT = /^\d{4}\. \d{1,2}\. \d{1,2}\. (오전|오후) \d{1,2}:\d{2}/
+/* ------------------------------ iOS ------------------------------ */
+
+/*
+ * 아이폰 내보내기. 형태가 PC·안드로이드와 또 다르다.
+ *
+ *   Talk_2020.7.25 17:48-1.txt        ← 파일명 줄
+ *   {방 이름} : 2026. 8. 5. 15:47      ← 저장한 날짜
+ *
+ *   2019년 5월 13일 월요일              ← 날짜 구분선
+ *   2019. 5. 13. 16:06, {이름} : {본문}
+ *
+ * **오전·오후가 없을 수 있다.** 실물(53KB)이 24시간제였다. 예전 `IOS_HINT`가
+ * 오전/오후를 필수로 봐서 이 파일은 감지조차 안 됐고, `unknown`으로 떨어져
+ * 한 건도 안 읽혔다.
+ */
+export const IOS_MSG =
+  /^(\d{4})\. (\d{1,2})\. (\d{1,2})\. (?:(오전|오후) )?(\d{1,2}):(\d{2}), (.+?) : ([\s\S]*)$/
+export const IOS_DATE = /^(\d{4})년 (\d{1,2})월 (\d{1,2})일 [월화수목금토일]요일$/
+/** `{방 이름} : 2026. 8. 5. 15:47` — 방 이름이 1:1에서는 상대 이름이다 */
+export const IOS_SAVED = /^(.+?) : (\d{4})\. (\d{1,2})\. (\d{1,2})\. (?:(오전|오후) )?\d{1,2}:\d{2}$/
+
+/** 감지용 — 시각 표기가 둘 다 가능하다 */
+export const IOS_HINT = /^\d{4}\. \d{1,2}\. \d{1,2}\. (?:(?:오전|오후) )?\d{1,2}:\d{2}, /
 
 export const SYS_NOTS =
   /^(.+님이 (들어왔|나갔)습니다\.|메시지가 삭제되었습니다\.|관리자가 메시지를 가렸습니다\.|방장이 [\s\S]*변경되었습니다\.[\s\S]*)$/
@@ -110,20 +131,29 @@ export type RawMsg = {
   text: string | null
 }
 
+/**
+ * 더 이상 쓰이지 않는다 — PC·안드로이드·iOS를 모두 읽는다.
+ *
+ * 형식이 안 맞는 파일은 예외가 아니라 **결과로** 말한다: `raw.length === 0`이고
+ * `unparsed`가 줄 수만큼 남는다. 호출부는 그걸 보고 안내하면 된다.
+ *
+ * @deprecated 새 코드에서 쓰지 마라. 남겨둔 건 기존 타입 가드 때문이다.
+ */
 export type UnsupportedFormat = { unsupported: 'ios' }
 
 /* ------------------------------ 포맷 감지 ------------------------------ */
 
-export function detectFormat(records: string[]): Source | 'ios' {
+export function detectFormat(records: string[]): Source {
   let pc = 0
   let an = 0
   let ios = 0
+  // iOS 줄이 안드로이드 패턴에도 걸릴 수 있어 **먼저** 본다
   for (const r of records.slice(0, 200)) {
-    if (PC_MSG.test(r)) pc += 1
+    if (IOS_MSG.test(r)) ios += 1
+    else if (PC_MSG.test(r)) pc += 1
     else if (AN_MSG.test(r)) an += 1
-    else if (IOS_HINT.test(r)) ios += 1
   }
-  if (ios > pc && ios > an) return 'ios'
+  if (ios > pc && ios > an) return 'kakao_ios'
   if (pc === 0 && an === 0) return 'unknown'
   return pc >= an ? 'kakao_pc' : 'kakao_android'
 }
@@ -141,7 +171,6 @@ export function splitRecords(s: string): string[] {
 export function parseTxt(text: string): ParseResult | UnsupportedFormat {
   const records = splitRecords(text)
   const source = detectFormat(records)
-  if (source === 'ios') return { unsupported: 'ios' }
 
   const raw: RawMsg[] = []
   let title: string | null = null
@@ -190,12 +219,29 @@ export function parseTxt(text: string): ParseResult | UnsupportedFormat {
     }
     if (AN_DATE.test(rec)) continue
 
+    if (source === 'kakao_ios') {
+      if (IOS_DATE.test(rec)) continue
+      // 맨 앞의 내보내기 파일명 줄(`Talk_2020.7.25 17:48-1.txt`).
+      // 메시지가 하나도 안 나온 시점에만 본다 — 본문에 `.txt`가 들어간
+      // 메시지를 헤더로 착각하면 안 된다.
+      if (raw.length === 0 && /\.txt$/i.test(rec)) continue
+    }
+
     // 제목 줄 / 저장 날짜 줄
     if (title == null) {
       const t = PC_TITLE.exec(rec)
       if (t) {
         title = t[1]
         continue
+      }
+      // iOS에는 `{상대} 님과 카카오톡 대화` 줄이 없다. 대신 저장 날짜 줄
+      // 앞부분이 방 이름이고, 1:1에서는 그게 상대 이름이다.
+      if (source === 'kakao_ios') {
+        const s = IOS_SAVED.exec(rec)
+        if (s) {
+          title = s[1].trim()
+          continue
+        }
       }
     }
     if (SAVED_LINE.test(rec)) continue
@@ -210,6 +256,14 @@ export function parseTxt(text: string): ParseResult | UnsupportedFormat {
           continue
         }
         push(m[1], curY, curM, curD, to24h(m[2], m[3]), +m[4], m[5])
+        continue
+      }
+    } else if (source === 'kakao_ios') {
+      const m = IOS_MSG.exec(rec)
+      if (m) {
+        // 오전·오후가 없으면 이미 24시간제다. `to24h`는 접두어가 없으면
+        // 시각을 그대로 돌려준다.
+        push(m[7], +m[1], +m[2], +m[3], to24h(m[4], m[5]), +m[6], m[8])
         continue
       }
     } else {

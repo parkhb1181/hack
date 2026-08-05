@@ -142,15 +142,56 @@ describe('닉네임 엣지 케이스 (SPEC §3.8)', () => {
   })
 })
 
-describe('iOS 감지 (PRD §5 Out)', () => {
-  it('iOS 포맷은 파싱하지 않고 거절한다', () => {
-    const txt = [
-      '하늘 님과 카카오톡 대화',
-      '2026. 7. 11. 오전 10:53, 하늘 : 안녕',
-      '2026. 7. 11. 오전 10:54, 민서 : 어',
-    ].join('\r\n')
-    const p = parseTxt(txt)
-    expect(isUnsupported(p)).toBe(true)
+/**
+ * 아이폰 내보내기. 실물 두 개를 받아보니 **같은 iOS인데 시각 표기가 갈렸다** —
+ * 기기가 24시간제면 `16:06`, 아니면 `오후 4:06`이다. 예전 감지기가 오전/오후를
+ * 필수로 봐서 24시간제 파일은 형식 판별조차 안 됐다.
+ */
+describe('iOS 내보내기', () => {
+  const head = ['Talk_2026.7.11 10:53-1.txt', '하늘 : 2026. 7. 11. 11:00', '', '']
+
+  it('오전·오후 표기를 읽는다', () => {
+    const p = parseTxt(
+      [
+        ...head,
+        '2026년 7월 11일 토요일',
+        '2026. 7. 11. 오전 10:53, 하늘 : 안녕',
+        '2026. 7. 11. 오후 10:54, 민서 : 어',
+      ].join('\r\n'),
+    )
+    if (isUnsupported(p)) throw new Error('unsupported')
+    expect(p.source).toBe('kakao_ios')
+    expect(p.raw).toHaveLength(2)
+    expect(p.raw[0].time).toBe('10:53')
+    expect(p.raw[1].time).toBe('22:54')
+    expect(p.unparsed).toBe(0)
+  })
+
+  it('24시간제 표기도 읽는다 — 실물이 이쪽이었다', () => {
+    const p = parseTxt(
+      [
+        ...head,
+        '2026년 7월 11일 토요일',
+        '2026. 7. 11. 16:06, 하늘 : 안녕',
+        '2026. 7. 11. 16:07, 민서 : 어',
+      ].join('\r\n'),
+    )
+    if (isUnsupported(p)) throw new Error('unsupported')
+    expect(p.source).toBe('kakao_ios')
+    expect(p.raw[0].time).toBe('16:06')
+    expect(p.unparsed).toBe(0)
+  })
+
+  it('방 이름을 제목으로 잡는다 — iOS엔 `님과 카카오톡 대화` 줄이 없다', () => {
+    const p = parseTxt([...head, '2026. 7. 11. 16:06, 민서 : 안녕'].join('\r\n'))
+    if (isUnsupported(p)) throw new Error('unsupported')
+    expect(p.title).toBe('하늘')
+  })
+
+  it('맨 앞 파일명 줄을 못 읽은 줄로 세지 않는다', () => {
+    const p = parseTxt([...head, '2026. 7. 11. 16:06, 민서 : 안녕'].join('\r\n'))
+    if (isUnsupported(p)) throw new Error('unsupported')
+    expect(p.unparsed).toBe(0)
   })
 })
 
