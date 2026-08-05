@@ -87,11 +87,30 @@ const clamp01 = (n: number) => Math.max(0, Math.min(1, n))
  */
 export const SPREAD_GAIN = 4
 
-function blend(parts: OddsPart[], coarse: boolean): number {
+/**
+ * 50 언저리를 비운다 — 결과는 항상 `50 ± DEAD_ZONE` 바깥에 놓인다.
+ *
+ * "아직 반반이에요"가 제일 자주 나오는데, 그건 사용자에게 아무 말도 안 한
+ * 것과 같다. 그래서 한쪽으로 밀어 읽어준다.
+ *
+ * ⚠️ **대가가 있다.** 진짜로 반반인 대화도 어느 한쪽으로 밀린다. 편차가
+ * 0에 가까울수록 그 방향은 근거가 얇다 — 부호를 기울기에서 가져와 최소한
+ * "다른 축과 같은 방향"이 되게 맞췄지만, 그래도 아슬아슬한 판정이다.
+ * 화면이 구성 축을 항상 펴 두는 이유가 여기에도 있다(SPEC §7.3.3).
+ */
+export const DEAD_ZONE = 12
+
+function blend(parts: OddsPart[], coarse: boolean, tieBreak = 0): number {
   const total = parts.reduce((s, p) => s + p.weight, 0)
   if (total === 0) return 50
   const raw = parts.reduce((s, p) => s + p.value * p.weight, 0) / total
-  const pct = 50 + 50 * Math.tanh((raw - 0.5) * SPREAD_GAIN)
+  const d = raw - 0.5
+
+  // 편차가 사실상 0이면 방향을 기울기에서 빌린다. 그것도 0이면
+  // '당신이 더 다가간 쪽'으로 둔다 — 실물에서 그쪽이 훨씬 흔하다.
+  const dir = d !== 0 ? Math.sign(d) : tieBreak !== 0 ? -Math.sign(tieBreak) : -1
+  const mag = DEAD_ZONE + (50 - DEAD_ZONE) * Math.tanh(Math.abs(d) * SPREAD_GAIN)
+  const pct = 50 + dir * mag
   // 표본이 얇으면 5단위로 뭉갠다. 22건짜리 표본에 `73.4`를 쓰는 것은
   // 없는 정밀도를 주장하는 것이다(SPEC §6.4와 같은 취지).
   // 표본이 충분하면 소수 한 자리까지 — 정수만 쓰면 비슷한 대화가 같은 값으로 붙는다.
@@ -163,7 +182,7 @@ export function reciprocity(report: Report): Odds {
   return {
     key: 'reciprocity',
     label: '상대도 마음이 있을 신호',
-    percent: blend(parts, h.precisionReduced),
+    percent: blend(parts, h.precisionReduced, h.tilt),
     parts,
     used: parts.length,
     total: 5,
@@ -243,7 +262,7 @@ export function momentum(report: Report): Odds {
   return {
     key: 'momentum',
     label: '더 이어질 신호',
-    percent: blend(parts, h.precisionReduced),
+    percent: blend(parts, h.precisionReduced, h.tilt),
     parts,
     used: parts.length,
     total: 5,

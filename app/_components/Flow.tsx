@@ -62,8 +62,10 @@ type Screen = 'intro' | 'upload' | 'run' | 'result' | 'metrics'
 function phraseOf(pct: number): string {
   if (pct >= 80) return '이건 뭐, 끝났죠'
   if (pct >= 62) return '반응 오는데요? 조금만 더'
+  // 38~62는 계산이 비워 둔 구간이다(DEAD_ZONE). 게이지를 손으로 끌 때만 온다.
   if (pct >= 45) return '아직 아무도 안 졌어요'
-  if (pct >= 30) return '음, 당신이 좀 더 뛰고 있어요'
+  if (pct >= 38) return '슬슬 기울고 있어요'
+  if (pct >= 25) return '음, 당신이 좀 더 뛰고 있어요'
   return '혼자 열심히시네요…'
 }
 

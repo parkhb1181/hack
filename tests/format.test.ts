@@ -10,7 +10,8 @@ import { describe, expect, it } from 'vitest'
 import { CATALOG } from '@/lib/metrics/catalog'
 import { evaluateAll, statusMessage } from '@/lib/metrics/registry'
 import { renderMetric } from '@/lib/stats/format'
-import { SPREAD_GAIN } from '@/lib/stats/odds'
+import { computeOdds, DEAD_ZONE, SPREAD_GAIN } from '@/lib/stats/odds'
+import { buildReport, isHardFloor } from '@/lib/report'
 import { txtCorpus } from './helpers'
 
 describe('표시 변환', () => {
@@ -147,5 +148,30 @@ describe('퍼센트 퍼짐 — SPEC §7.3.3', () => {
   it('극단에서 잘리지 않고 완만해진다', () => {
     // 0.9와 1.0의 간격이 0.5와 0.6의 간격보다 좁다 (포화)
     expect(at(1.0) - at(0.9)).toBeLessThan(at(0.6) - at(0.5))
+  })
+})
+
+/**
+ * "50% 근처는 아무 말도 안 한 것과 같다"는 판단으로 가운데를 비웠다.
+ * 값이 그 안에 들어오면 카드가 다시 밋밋해진다.
+ */
+describe('가운데 구간을 비운다 — SPEC §7.3.3', () => {
+  const corpus = txtCorpus('seed_balanced')
+  const report = buildReport(corpus)
+
+  it('균형 대화도 50 근처에 놓이지 않는다', () => {
+    if (isHardFloor(report)) return
+    for (const o of computeOdds(report)) {
+      expect(Math.abs(o.percent - 50)).toBeGreaterThanOrEqual(DEAD_ZONE - 0.05)
+    }
+  })
+
+  it('일방적 대화는 더 멀리 간다 — 순서가 유지된다', () => {
+    const one = buildReport(txtCorpus('seed_onesided'))
+    if (isHardFloor(one) || isHardFloor(report)) return
+    const r = (rep: typeof one) =>
+      computeOdds(rep as never).find((o) => o.key === 'reciprocity')!.percent
+    // 일방적(내가 더 다가감)이 균형보다 낮아야 한다
+    expect(r(one)).toBeLessThan(r(report as never))
   })
 })
