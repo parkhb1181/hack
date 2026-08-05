@@ -80,6 +80,11 @@ for (const [key, r] of Object.entries(metrics)) {
         `${out.max != null ? ` / ${out.max}` : ''}${g}`,
     )
     if (out.note) console.log(`  ${' '.repeat(16)}${out.note}`)
+  } else if (out.kind === 'chips') {
+    console.log(
+      `● ${label.padEnd(15)} 나 ${out.me.join(' · ') || '없음'} / 상대 ${out.other.join(' · ') || '없음'}`,
+    )
+    if (out.note) console.log(`  ${' '.repeat(16)}${out.note}`)
   } else {
     console.log(`● ${label.padEnd(15)} ${out.text}`)
   }

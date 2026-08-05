@@ -26,6 +26,28 @@ describe('표시 변환', () => {
     expect(q).toMatchObject({ kind: 'pair', me: 20, other: 25, unit: '%' })
   })
 
+  /**
+   * 말버릇을 한 줄 평문으로 이어 붙이면 `당신 ㅋㅋ · 근데 / 상대 ㅇㅇ`이 되어
+   * 어디까지가 누구 것인지 안 보였다. 낱말 목록으로 넘겨야 화면이 알약으로
+   * 끊어 그릴 수 있다.
+   */
+  it('말버릇은 낱말 목록으로 넘긴다', () => {
+    const r = renderMetric('phraseGap', {
+      me: [{ gram: 'ㅋㅋ' }, { gram: '근데' }, { gram: '아니' }, { gram: '그래서' }],
+      other: [{ gram: 'ㅇㅇ' }],
+    })
+    expect(r).toMatchObject({ kind: 'chips', me: ['ㅋㅋ', '근데', '아니'], other: ['ㅇㅇ'] })
+  })
+
+  it('말버릇이 비어도 알약 형태를 유지한다', () => {
+    // 예전에는 여기서 '없음'이 섞인 문자열이 나왔다 — 화면이 갈래를 못 나눈다
+    expect(renderMetric('phraseGap', { me: [], other: [] })).toMatchObject({
+      kind: 'chips',
+      me: [],
+      other: [],
+    })
+  })
+
   it('중첩 객체를 한 쌍으로 눌러 편다', () => {
     // 응답 분포는 {me:{fast,mid,slow,n}, other:{...}} — 그대로 찍으면 못 읽는다
     const r = renderMetric('replyDist', {

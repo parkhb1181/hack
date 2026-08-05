@@ -163,13 +163,25 @@ describe('프롬프트 — 문서와 어긋나면 안 된다', () => {
   })
 
   it('썸 줄이 앞날 예측을 금지한다', () => {
-    expect(STAGE_LINE.crush).toContain('예측하지 않는다')
+    expect(STAGE_LINE.crush).toContain('점치지 마라')
   })
 
-  it('어투를 지정한다 — 규칙 9', () => {
-    // 지정하지 않으면 LLM은 "-했다", 폴백은 "-습니다"로 갈린다(실측)
-    expect(SYSTEM_PROMPT).toContain('-습니다')
-    expect(fallbackSentence(R, 'crush')).toContain('니다')
+  it('어투가 LLM과 폴백에서 같다', () => {
+    // 지정하지 않으면 LLM은 "-했다", 폴백은 "-습니다"로 갈린다(실측).
+    // 지금은 양쪽 다 반말 한 줄이다.
+    expect(SYSTEM_PROMPT).toContain('반말')
+    expect(fallbackSentence(R, 'crush')).not.toMatch(/니다|세요/)
+  })
+
+  /**
+   * 길이만 줄이면 지표 낭독이 그대로 온다 — 한 줄로 줄이랬더니
+   * `메시지 점유율은 당신 57%, 상대 43%입니다`가 왔다. 그래서 프롬프트가
+   * 숫자를 막고 나쁜 예를 직접 보여준다.
+   */
+  it('지표 낭독을 막는다', () => {
+    expect(SYSTEM_PROMPT).toContain('숫자를 읽어 주지 마라')
+    expect(SYSTEM_PROMPT).toContain('나쁜 예')
+    expect(SYSTEM_PROMPT).toContain('좋은 예')
   })
 })
 
@@ -191,12 +203,35 @@ describe('폴백 — §6', () => {
 
   it('가용하지 않은 축은 언급하지 않는다 — §6.4', () => {
     // seed는 임베딩·C급이 없다
-    expect(text).not.toContain('이모티콘의 정서')
+    expect(text).not.toContain('이모티콘 온도')
+  })
+
+  /**
+   * 폴백이 지표를 낭독하던 시절의 실제 출력:
+   * `메시지 점유율은 당신 57%, 상대 43%입니다. 평균 길이 차는 3자이며…`
+   * 정확하지만 화면 위 카드가 이미 말한 것이라 읽는 사람에겐 아무 말도 아니다.
+   */
+  it('숫자를 읽어 주지 않는다', () => {
+    expect(text).not.toMatch(/\d/)
+    expect(text).not.toContain('%')
+    expect(text).not.toContain('점유율')
+  })
+
+  it('한 문장이다 — 상한과 같다', () => {
+    expect(countSentences(text)).toBe(1)
+  })
+
+  it('축이 하나도 없으면 균형 문구로 간다', () => {
+    const bare = { ...R, metrics: {} } as unknown as Report
+    const s = fallbackSentence(bare, 'crush')
+    expect(s).toBeTruthy()
+    expect(verify(s, verifiableAggregate(bare)).ok).toBe(true)
   })
 
   it('변화점을 넣어도 검증을 통과한다 — §6.2', () => {
-    // month는 "2025-03" 문자열이라 집계 숫자로 안 잡힌다. 연도를 그대로 쓰면
-    // "2025"가 없는 숫자로 걸리므로, figures가 월만 떼어 올려야 한다.
+    // 예전에는 "3월부터 41.2% 줄었고"를 문장에 넣느라 figures가 월만 떼어
+    // 올려야 했다(연도 2025가 "없는 숫자"로 걸렸다). 지금은 숫자를 안 쓰지만,
+    // 축을 고르는 근거는 여전히 화면과 같은 값이어야 한다.
     const withCp = {
       ...R,
       metrics: {
@@ -210,12 +245,10 @@ describe('폴백 — §6', () => {
     expect(f.changeDropPct).toBe(41.2)
 
     const s = fallbackSentence(withCp, 'crush')
-    expect(s).toContain('3월부터')
-    expect(s).not.toContain('2025')
+    expect(s).not.toMatch(/\d/)
 
     const v = verify(s, verifiableAggregate(withCp))
-    expect(v.badNumbers).toEqual([])
-    expect(v.violations).toEqual([])
+    expect(v.ok).toBe(true)
   })
 
   it('하드 플로어 문장은 단정하지 않는다', () => {

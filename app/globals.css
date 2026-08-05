@@ -11,38 +11,47 @@
  * 코랄 위에 얹으면 못 읽는다. `.dev-root` 아래에만 기존 모노 스타일을 남긴다.
  */
 
+/*
+ * 색은 **화사한 쪽**으로 한 번 올렸다.
+ *
+ * 처음 값은 회분홍에 가까웠다(--page #fbeff2, --sub #8a5d6e). 하나씩 보면
+ * 얌전한데 화면 전체로 보면 먼지 낀 것처럼 가라앉았다. 배경에서 회색기를
+ * 빼고, 강조색의 채도를 올리고, 그라디언트에 살구빛을 섞어 단색 분홍에서
+ * 벗어나게 했다. 글자색은 대비를 지켜야 해서 거의 그대로 둔다.
+ */
 :root {
-  --page: #fbeff2;
-  --sheet: #fff7f5;
+  --page: #fff2f7;
+  --sheet: #fffafc;
   --card: #ffffff;
-  --line: #ffd9de;
-  --line-soft: #f3dce2;
+  --line: #ffe0ea;
+  --line-soft: #f8e3ec;
 
-  --hot: #ff5a80;
-  --hot-2: #ff6b8b;
-  --hot-3: #ff8fa8;
-  --deep: #e8517e;
+  --hot: #ff4d7d;
+  --hot-2: #ff5f8f;
+  --hot-3: #ff8fb2;
+  --deep: #f0417c;
 
-  --ink: #3d2230;
-  --ink-2: #5c3a49;
-  --sub: #8a5d6e;
-  --mute: #a97a8a;
-  --mute-2: #b58a99;
-  --faint: #c9a5b2;
-  --faint-2: #b394a0;
+  --ink: #35202c;
+  --ink-2: #5a3646;
+  --sub: #8f5f72;
+  --mute: #ae7a8e;
+  --mute-2: #bb8b9d;
+  --faint: #d3a8b8;
+  --faint-2: #c098a6;
 
-  --soft: #ffedf0;
-  --soft-2: #ffe4e9;
+  --soft: #fff0f5;
+  --soft-2: #ffe6ee;
   /* 막대·게이지 전용 파스텔 — 카드가 여럿 모여도 안 시끄럽게 */
-  --bar-a: #ffc4d3;
-  --bar-b: #ff9db4;
-  --bar-track: #fdeef2;
-  --soft-3: #fff3f5;
-  --soft-4: #fbedf0;
+  --bar-a: #ffc9dd;
+  --bar-b: #ff92b8;
+  --bar-track: #fff0f5;
+  --soft-3: #fff6f9;
+  --soft-4: #fdf1f5;
 
-  --grad: linear-gradient(135deg, #ff8fa8, #ff6b8b);
-  --shadow: 0 10px 30px rgba(232, 81, 126, 0.1);
-  --shadow-btn: 0 12px 26px rgba(255, 107, 139, 0.38);
+  /* 살구 → 분홍. 단색 분홍보다 한 톤 밝게 보인다 */
+  --grad: linear-gradient(135deg, #ffab8f, #ff5f8f);
+  --shadow: 0 10px 30px rgba(240, 65, 124, 0.12);
+  --shadow-btn: 0 12px 26px rgba(255, 95, 143, 0.36);
 }
 
 * {
@@ -110,7 +119,7 @@ input[type='file'] {
     max-height: 880px;
     border-radius: 40px;
     border: 1px solid var(--line);
-    box-shadow: 0 24px 60px rgba(232, 81, 126, 0.14);
+    box-shadow: 0 24px 60px rgba(240, 65, 124, 0.16);
   }
 }
 
@@ -254,7 +263,7 @@ p.lead {
 }
 
 .cta:disabled {
-  background: #f0d8de;
+  background: var(--line-soft);
   color: #fff;
   box-shadow: none;
   cursor: default;
@@ -315,7 +324,7 @@ p.lead {
 
 .drop {
   background: #fff;
-  border: 2px dashed #ffb3c2;
+  border: 2px dashed #ffbfd4;
   border-radius: 28px;
   padding: 26px 20px;
   text-align: center;
@@ -366,7 +375,7 @@ p.lead {
   aspect-ratio: 1;
   border-radius: 18px;
   background: var(--soft-2);
-  border: 1px solid #ffc9d4;
+  border: 1px solid #ffd4e2;
   overflow: hidden;
 }
 
@@ -629,7 +638,7 @@ p.lead {
 }
 
 .step[data-state='wait'] .mark {
-  background: #f0dce2;
+  background: var(--line-soft);
   color: var(--faint);
   font-weight: 700;
 }
@@ -645,13 +654,13 @@ p.lead {
 
 .step[data-state='done'] .mark,
 .step[data-state='skip'] .mark {
-  background: #ffd1da;
+  background: #ffd6e4;
   color: var(--deep);
 }
 
 .step[data-state='run'] {
-  box-shadow: 0 8px 22px rgba(232, 81, 126, 0.14);
-  border: 1.5px solid #ffb3c2;
+  box-shadow: 0 8px 22px rgba(240, 65, 124, 0.16);
+  border: 1.5px solid #ffbfd4;
   padding: 15px 17px;
 }
 
@@ -661,7 +670,7 @@ p.lead {
 }
 
 .step[data-state='run'] .mark {
-  border: 3px solid #ffd1da;
+  border: 3px solid #ffd6e4;
   border-top-color: var(--hot);
   animation: spin 0.9s linear infinite;
 }
@@ -682,7 +691,7 @@ p.lead {
 .bar i {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #ffc4d3, #ff9db4);
+  background: linear-gradient(90deg, var(--bar-a), var(--bar-b));
   border-radius: 999px;
   transition: width 0.5s ease;
 }
@@ -753,7 +762,7 @@ p.lead {
   left: 0;
   top: 0;
   bottom: 0;
-  background: linear-gradient(90deg, #ffc9d8, #ff9db4);
+  background: linear-gradient(90deg, var(--bar-a), var(--bar-b));
   border-radius: 999px;
   transition: width 0.8s ease;
 }
@@ -767,7 +776,7 @@ p.lead {
   background: #fff;
   border: 3px solid var(--hot);
   border-radius: 50%;
-  box-shadow: 0 4px 10px rgba(255, 90, 128, 0.35);
+  box-shadow: 0 4px 10px rgba(255, 77, 125, 0.35);
   transition: left 0.8s ease;
 }
 
@@ -810,7 +819,7 @@ p.lead {
   background: var(--soft-2);
   color: var(--deep);
   font-weight: 700;
-  border: 1px dashed #ffb3c2;
+  border: 1px dashed #ffbfd4;
 }
 
 .chip.preview:hover {
@@ -830,51 +839,20 @@ p.lead {
   line-height: 1.5;
 }
 
-.tiltcard {
-  background: linear-gradient(135deg, #ffe9ee, #ffdde6);
-  border-radius: 26px;
+/*
+ * LLM 한 줄. 게이지 바로 밑이라 카드처럼 무겁게 그리면 숫자와 경쟁한다 —
+ * 테두리 없이 여백과 색만으로 띄운다.
+ */
+.oneline {
+  margin-top: 14px;
   padding: 16px 20px;
-  margin-top: 12px;
-}
-
-.tiltcard .row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-}
-
-.tiltcard .lab {
-  font-size: 14px;
-  color: var(--ink);
-  font-weight: 700;
-}
-
-.tiltcard .val {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--deep);
-}
-
-.tags {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-  flex-wrap: wrap;
-}
-
-.tags span {
-  font-size: 11.5px;
-  background: #fff;
-  border-radius: 999px;
-  padding: 5px 11px;
-  color: var(--sub);
-}
-
-.tiltcard .say {
-  font-size: 13px;
-  color: var(--sub);
+  border-radius: 24px;
+  background: linear-gradient(135deg, #fff0f4, #ffe3ec);
+  color: var(--ink-2);
+  font-size: 14.5px;
   font-weight: 600;
-  margin-top: 12px;
+  line-height: 1.6;
+  text-align: center;
 }
 
 .para {
@@ -882,7 +860,7 @@ p.lead {
   border-radius: 24px;
   padding: 18px 20px;
   margin-top: 14px;
-  border: 1.5px dashed #ffc9d4;
+  border: 1.5px dashed #ffd4e2;
 }
 
 .para .cap {
@@ -1000,12 +978,63 @@ p.lead {
 }
 
 .mbar i {
-  background: linear-gradient(90deg, #ffc4d3, #ff9db4);
+  background: linear-gradient(90deg, var(--bar-a), var(--bar-b));
 }
 
 .mbar u {
   flex: 1;
-  background: #fdeef2;
+  background: var(--bar-track);
+}
+
+/*
+ * 말버릇은 숫자가 아니라 낱말이다. 한 줄 평문(`당신 ㅋㅋ · 근데 / 상대 ㅇㅇ`)
+ * 으로 두면 어디까지가 누구 것인지 안 보였다 — 낱말 하나를 알약 하나로
+ * 끊고, 내 쪽·상대 쪽 색을 다르게 준다.
+ */
+.gramrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.gramrow em {
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--faint);
+  min-width: 24px;
+}
+
+.grams {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.gram {
+  font-size: 12.5px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 5px 12px;
+  white-space: nowrap;
+}
+
+.gram.me {
+  background: linear-gradient(135deg, #ffd7e2, #ffc2d4);
+  color: #b03a63;
+}
+
+.gram.other {
+  background: var(--soft);
+  color: var(--sub);
+  border: 1.5px solid var(--line);
+}
+
+.gram.none {
+  background: var(--soft-4);
+  color: var(--faint);
+  font-weight: 600;
 }
 
 .mcard .note {
@@ -1037,7 +1066,7 @@ p.lead {
   border-radius: 999px;
   overflow: hidden;
   margin-top: 10px;
-  background: #f0dce2;
+  background: var(--line-soft);
 }
 
 .mini i {
@@ -1054,7 +1083,7 @@ p.lead {
 
 .err {
   background: #fff;
-  border: 1.5px solid #ffb3c2;
+  border: 1.5px solid #ffbfd4;
   border-radius: 20px;
   padding: 16px 18px;
   color: var(--ink-2);

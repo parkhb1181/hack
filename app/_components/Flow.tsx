@@ -126,13 +126,6 @@ function useDragScroll<T extends HTMLElement>(): RefObject<T | null> {
   return ref
 }
 
-/** 기울기 한마디. 위 퍼센트와 다른 축이라 문장도 따로 둔다 */
-function tiltPhraseOf(tilt: number): string {
-  if (tilt > 12) return '당신이 좀 더 뛰고 있어요'
-  if (tilt < -12) return '어? 상대가 더 오고 있는데요'
-  return '둘이 사이좋게 반반이에요'
-}
-
 export default function Flow() {
   const [screen, setScreen] = useState<Screen>('intro')
   const [files, setFiles] = useState<File[]>([])
@@ -690,30 +683,16 @@ function ResultView({
           )}
         </div>
 
-        <div className="tiltcard">
-          <div className="row">
-            <div className="lab">이 대화의 기울기</div>
-            <div className="val">
-              {h.precisionReduced ? '—' : `${h.tilt > 0 ? '+' : ''}${h.tilt}`}
-            </div>
-          </div>
-          <div className="tags">
-            {Object.entries(h.axes)
-              .filter(([, v]) => Math.abs(v as number) >= 0.1)
-              .map(([k, v]) => (
-                <span key={k}>
-                  {AXIS_NAME[k] ?? k} →{(v as number) > 0 ? '내 쪽' : '상대 쪽'}
-                </span>
-              ))}
-          </div>
-          <div className="say">{tiltPhraseOf(h.tilt)}</div>
-        </div>
-
         {/*
-          한 문단 해석은 결과 화면에서 뺐다. 계산은 그대로 돌고 `/dev`의
-          LLM 탭에서 볼 수 있다 — 프롬프트·검증 결과까지 같이 봐야 하는
-          물건이라 그쪽이 맞는 자리다.
+          기울기 카드는 뺐다. 위 게이지가 이미 같은 이야기를 크게 하고 있어서
+          바로 밑에 -6 같은 숫자를 또 놓으면 둘 중 뭘 봐야 하는지 흐려진다.
+          숫자는 `지표 자세히`와 `/dev`에 그대로 있다.
+
+          대신 LLM 한 줄이 여기 온다 — 숫자가 아니라 "그래서 뭔데"에 답하는
+          자리다(MODELS §4.2). 실패하면 폴백 문장이 오고, 그마저 비면
+          아무것도 안 그린다.
         */}
+        {trace.llm?.text && <div className="oneline">{trace.llm.text}</div>}
       </div>
 
       <div className="actions">
@@ -726,13 +705,6 @@ function ResultView({
       </div>
     </div>
   )
-}
-
-const AXIS_NAME: Record<string, string> = {
-  msgCount: '메시지 수',
-  msgLength: '평균 길이',
-  question: '질문',
-  sync: '맞춰주기',
 }
 
 /* ------------------------------ 5. 지표 ------------------------------ */
@@ -798,6 +770,38 @@ function MetricsView({ res, onBack }: { res: Result; onBack: () => void }) {
                         <u />
                       </div>
                     )}
+                    {out.note && <div className="note">{out.note}</div>}
+                  </>
+                ) : out.kind === 'chips' ? (
+                  <>
+                    <div className="gramrow">
+                      <em>나</em>
+                      <div className="grams">
+                        {out.me.length ? (
+                          out.me.map((g) => (
+                            <span className="gram me" key={g}>
+                              {g}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="gram none">없음</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="gramrow">
+                      <em>상대</em>
+                      <div className="grams">
+                        {out.other.length ? (
+                          out.other.map((g) => (
+                            <span className="gram other" key={g}>
+                              {g}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="gram none">없음</span>
+                        )}
+                      </div>
+                    </div>
                     {out.note && <div className="note">{out.note}</div>}
                   </>
                 ) : (

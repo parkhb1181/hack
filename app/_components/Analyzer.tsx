@@ -510,6 +510,11 @@ function Metrics({ report }: { report: Report }) {
                 {out.unit}
                 {out.max != null && <span className="dimtext"> / {out.max}</span>}
               </div>
+            ) : out.kind === 'chips' ? (
+              // 개발자 화면은 알약을 안 그린다 — 값이 뭔지만 보면 된다
+              <div className="v">
+                나 {out.me.join(' · ') || '없음'} / 상대 {out.other.join(' · ') || '없음'}
+              </div>
             ) : (
               <div className="v">{out.text}</div>
             )}

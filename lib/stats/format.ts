@@ -22,7 +22,13 @@ export type Rendered =
    * `max`가 있으면 막대까지 그린다.
    */
   | { kind: 'single'; value: number; unit: string; max?: number; note?: string }
-  /** 숫자로 못 줄이는 것 (말버릇 목록 등) */
+  /**
+   * 양쪽의 짧은 낱말 목록. 말버릇을 `text`로 이어 붙이면
+   * `당신 ㅋㅋ · 근데 / 상대 ㅇㅇ`가 한 줄 평문으로 찍혀 어디까지가 누구
+   * 것인지 안 보였다. 낱말 하나가 알약 하나면 경계가 눈으로 잡힌다.
+   */
+  | { kind: 'chips'; me: string[]; other: string[]; note?: string }
+  /** 숫자로도 낱말로도 못 줄이는 것 */
   | { kind: 'text'; text: string }
 
 export function renderMetric(key: string, v: unknown): Rendered {
@@ -146,12 +152,13 @@ export function renderMetric(key: string, v: unknown): Rendered {
 
     case 'phraseGap': {
       const g = v as { me: Array<{ gram: string }>; other: Array<{ gram: string }> }
-      const pick = (xs: Array<{ gram: string }>) =>
-        xs
-          .slice(0, 3)
-          .map((x) => x.gram)
-          .join(' · ') || '없음'
-      return { kind: 'text', text: `당신 ${pick(g.me)}  /  상대 ${pick(g.other)}` }
+      const pick = (xs: Array<{ gram: string }>) => xs.slice(0, 3).map((x) => x.gram)
+      return {
+        kind: 'chips',
+        me: pick(g.me),
+        other: pick(g.other),
+        note: '상대는 안 쓰는데 나만 쓰는 말',
+      }
     }
 
     default:

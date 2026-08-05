@@ -107,8 +107,13 @@ export function verifyWords(text: string): Violation[] {
   return out
 }
 
-/** 3문장 이내 — MODELS §4.2 규칙 8 */
-export const MAX_SENTENCES = 3
+/**
+ * 한 문장 — MODELS §4.2.
+ *
+ * 화면이 쓰는 것이 한 줄이라 상한도 하나다. 세 문장을 허용하면 카드가
+ * 이미 말한 숫자를 다시 읽어주는 문단이 돌아온다(실측).
+ */
+export const MAX_SENTENCES = 1
 
 export function countSentences(text: string): number {
   return text
