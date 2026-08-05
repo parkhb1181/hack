@@ -1,4 +1,10 @@
 /*
+ * ⚠️ 이 파일에 BOM을 넣지 마라. PowerShell의 `Set-Content -Encoding UTF8`이
+ * 붙인다. 붙으면 첫 선택자가 `﻿:root`가 되어 `<html>`에 안 걸리고, 그러면
+ * **모든 `var(--*)`가 빈 값이 된다** — 색과 그라디언트가 통째로 사라진다.
+ * 리터럴 값(`color: #fff`)만 남아서 "아이콘만 깨진 것처럼" 보인다(실측).
+ * 편집은 BOM을 안 붙이는 도구로 한다.
+ *
  * 말랑 코랄 — 목업(malang-coral.html)이 기준이다.
  *
  * 개발자 모드(/dev)는 성격이 다르다. 거긴 좌표·JSON·프롬프트를 읽는 화면이라
@@ -71,27 +77,36 @@ input[type='file'] {
  * 데스크톱에서도 폰 비율을 유지한다. 데모를 노트북으로 하는데 요소가
  * 가로로 퍼지면 목업과 다른 물건이 된다.
  */
+/*
+ * ⚠️ `min-height`가 아니라 `height`다.
+ *
+ * min-height면 내용만큼 껍데기가 늘어나서 **안쪽 스크롤이 아예 안 생긴다** —
+ * 실측으로 `.scroll`의 clientHeight와 scrollHeight가 같았다(1730/1730).
+ * 목업이 812px 고정 폰이므로 높이를 못 박는 게 원래 의도이기도 하다.
+ */
 .phone {
   width: 100%;
   max-width: 420px;
-  min-height: 100vh;
+  height: 100dvh;
   margin: 0 auto;
   background: var(--sheet);
   display: flex;
   flex-direction: column;
   position: relative;
+  overflow: hidden;
 }
 
 @media (min-width: 460px) {
   body {
     padding: 28px 0;
+    overflow: hidden;
   }
   .phone {
-    min-height: calc(100vh - 56px);
+    height: calc(100dvh - 56px);
+    max-height: 880px;
     border-radius: 40px;
     border: 1px solid var(--line);
     box-shadow: 0 24px 60px rgba(232, 81, 126, 0.14);
-    overflow: hidden;
   }
 }
 
@@ -114,6 +129,8 @@ input[type='file'] {
   flex: 1;
   display: flex;
   flex-direction: column;
+  /* flex 자식은 기본 min-height가 auto라 안쪽 overflow가 안 먹는다 */
+  min-height: 0;
 }
 
 .navbar {
@@ -254,6 +271,16 @@ p.lead {
   padding: 14px 18px;
 }
 
+/* 버튼 아래 작게 붙는 한 줄 — 박스를 두면 버튼보다 무거워진다 */
+.undercta {
+  font-size: 11.5px;
+  color: var(--mute-2);
+  text-align: center;
+  line-height: 1.55;
+  margin-top: 12px;
+  padding: 0 8px;
+}
+
 .sheetcard {
   background: #fff;
   border-radius: 24px;
@@ -320,38 +347,161 @@ p.lead {
   line-height: 1.5;
 }
 
-.thumbs {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  margin-top: 14px;
-  flex-wrap: wrap;
+/*
+ * 올린 뒤에는 점선을 걷고 **정사각형 카드**로 보여준다. 점선은 "여기 넣어라"는
+ * 신호라, 이미 넣은 뒤에도 남아 있으면 아직 안 넣은 것처럼 읽힌다.
+ */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
 }
 
-.thumbs .th {
-  width: 44px;
-  height: 72px;
-  border-radius: 10px;
+.grid .cell {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 18px;
   background: var(--soft-2);
   border: 1px solid #ffc9d4;
   overflow: hidden;
 }
 
-.thumbs .th img {
+.grid .cell img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  /* 캡처는 세로로 길다. 위쪽(대화 시작)이 보이는 게 알아보기 쉽다 */
+  object-position: top center;
 }
 
-.thumbs .th.more {
+/* 대화 파일도 같은 정사각형이다 — 종류가 달라도 "내가 올린 것"은 하나로 보인다 */
+.grid .cell.doc {
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  gap: 4px;
+  text-align: center;
+}
+
+.grid .cell.doc .ic {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #fff;
+  background: var(--grad);
+  border-radius: 8px;
+  padding: 4px 9px;
+}
+
+.grid .cell.doc .nm {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+  word-break: break-all;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.grid .cell.doc .sz {
+  font-size: 10.5px;
+  color: var(--mute-2);
+}
+
+.addmore {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 999px;
+  border: 1.5px solid var(--line);
+  background: #fff;
+  color: var(--deep);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.addmore:hover {
   background: var(--soft-3);
-  border-style: dashed;
+}
+
+.x {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(61, 34, 48, 0.62);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #e8a2b4;
-  font-size: 18px;
+  backdrop-filter: blur(4px);
+}
+
+.x:hover {
+  background: var(--hot);
+}
+
+/* 대화 파일 한 장 */
+.filechip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 14px 16px;
+  box-shadow: 0 6px 20px rgba(232, 81, 126, 0.08);
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.filechip .ic {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.filechip .meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.filechip .nm {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filechip .sz {
+  font-size: 11.5px;
+  color: var(--mute-2);
+  margin-top: 3px;
+}
+
+.filechip .x {
+  position: static;
+  background: var(--soft-2);
+  color: var(--deep);
+  flex-shrink: 0;
+}
+
+.picked {
+  font-size: 12px;
+  color: var(--mute-2);
+  text-align: center;
+  margin-top: 14px;
 }
 
 .check {
@@ -509,9 +659,9 @@ p.lead {
 
 .hero {
   background: #fff;
-  border-radius: 28px;
-  padding: 28px 24px 24px;
-  margin-top: 18px;
+  border-radius: 26px;
+  padding: 20px 22px 18px;
+  margin-top: 14px;
   box-shadow: var(--shadow);
   text-align: center;
 }
@@ -523,7 +673,7 @@ p.lead {
 }
 
 .hero .num {
-  font-size: 64px;
+  font-size: 48px;
   font-weight: 800;
   color: var(--hot);
   letter-spacing: -0.03em;
@@ -531,11 +681,11 @@ p.lead {
 }
 
 .hero .num span {
-  font-size: 28px;
+  font-size: 21px;
 }
 
 .hero .phrase {
-  font-size: 17px;
+  font-size: 15.5px;
   color: var(--ink);
   font-weight: 700;
   margin-top: 6px;
@@ -543,10 +693,10 @@ p.lead {
 
 .gauge {
   position: relative;
-  height: 14px;
+  height: 11px;
   border-radius: 999px;
   background: var(--soft-2);
-  margin: 22px 6px 8px;
+  margin: 16px 6px 7px;
 }
 
 .gauge i {
@@ -563,8 +713,8 @@ p.lead {
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 26px;
-  height: 26px;
+  width: 21px;
+  height: 21px;
   background: #fff;
   border: 3px solid var(--hot);
   border-radius: 50%;
@@ -581,7 +731,7 @@ p.lead {
 }
 
 .chip {
-  margin-top: 16px;
+  margin-top: 12px;
   font-size: 12px;
   color: var(--mute);
   background: var(--soft-3);
@@ -593,9 +743,9 @@ p.lead {
 
 .tiltcard {
   background: linear-gradient(135deg, #ffe9ee, #ffdde6);
-  border-radius: 28px;
-  padding: 20px 24px;
-  margin-top: 14px;
+  border-radius: 26px;
+  padding: 16px 20px;
+  margin-top: 12px;
 }
 
 .tiltcard .row {
@@ -611,7 +761,7 @@ p.lead {
 }
 
 .tiltcard .val {
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 800;
   color: var(--deep);
 }
@@ -795,8 +945,33 @@ p.lead {
 .scroll {
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
   margin: 0 -24px;
-  padding: 0 24px;
+  padding: 0 24px 4px;
+  /* 데스크톱에서 잡아끌 수 있다는 표시 — 터치에서는 의미가 없다 */
+  cursor: grab;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+  overscroll-behavior: contain;
+}
+
+.scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scroll::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 999px;
+}
+
+.scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (hover: none) {
+  .scroll {
+    cursor: auto;
+  }
 }
 
 .stack {
@@ -1260,3 +1435,4 @@ p.lead {
   height: auto;
   filter: grayscale(1);
 }
+

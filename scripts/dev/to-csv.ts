@@ -1,4 +1,4 @@
-﻿/** 시드 txt → CSV 변환 (iOS 내보내기 흉내) — 개발용 */
+/** 시드 txt → CSV 변환 (iOS 내보내기 흉내) — 개발용 */
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { isUnsupported, parseTxt } from '@/lib/parsers/txt'

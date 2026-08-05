@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LLM 지연 실측 — `npx tsx scripts/bench/llm-latency.ts`
  *
  * 실측에서 12초 타임아웃에 2/3이 걸렸다. gemini-3.6-flash는 사고(thinking)

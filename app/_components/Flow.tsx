@@ -12,6 +12,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { RefObject } from 'react'
 
 import { renderMetric } from '@/lib/stats/format'
 import type { Odds } from '@/lib/stats/odds'
@@ -33,13 +34,13 @@ const STEPS: Array<{ key: StageKey; name: string }> = [
 
 /** 기다리는 동안 굴러가는 한마디. 지루함을 채우는 게 목적이다 */
 const TIPS = [
-  '누가 먼저 말을 거는지 세고 있어요.',
-  '이모티콘은 내보내기하면 사라져요. 캡처라서 읽을 수 있는 거예요.',
-  '답장 속도는 애정이 아니라 습관일 때가 더 많대요.',
-  '메시지가 길다고 좋은 것도, 짧다고 나쁜 것도 아니에요.',
-  '같은 말을 몇 번 했는지도 보고 있어요.',
-  '이 숫자는 대화 패턴이에요. 마음의 크기는 아니고요.',
-  '거의 다 됐어요. 문장 다듬는 중이에요.',
+  '누가 먼저 말 거는지 세는 중이에요. 이거 은근 잔인해요.',
+  '이모티콘은 내보내기하면 사라져요. 캡처라서 볼 수 있는 거예요.',
+  '답장 빠른 게 꼭 마음은 아니래요. 손가락이 빠른 걸 수도 있고요.',
+  '길게 쓴다고 좋은 것도 아니에요. 짧게 자주가 더 무섭거든요.',
+  '같은 말 몇 번 했는지도 보고 있어요. 네, 그것도요.',
+  '이건 대화 패턴이에요. 마음의 크기는 저도 몰라요.',
+  '거의 다 왔어요. 문장 다듬는 중이에요.',
 ]
 
 /* ------------------------------ 응답 ------------------------------ */
@@ -53,13 +54,81 @@ type Result = {
 
 type Screen = 'intro' | 'upload' | 'run' | 'result' | 'metrics'
 
-/** 퍼센트 → 한마디. 숫자만 크면 무슨 뜻인지 안 와닿는다 */
+/**
+ * 퍼센트 → 한마디. 숫자만 크면 82가 무슨 뜻인지 안 와닿는다.
+ *
+ * 80을 위쪽 경계로 둔다 — 거기 넘으면 "끝"이라고 말해도 되는 구간이다.
+ */
 function phraseOf(pct: number): string {
-  if (pct >= 75) return '이미 넘어왔어요'
-  if (pct >= 60) return '슬슬 넘어오는 중'
-  if (pct >= 45) return '아직 반반이에요'
-  if (pct >= 30) return '조금 더 두고 봐야 해요'
-  return '지금은 당신이 더 가 있어요'
+  if (pct >= 80) return '이건 뭐, 끝났죠'
+  if (pct >= 62) return '반응 오는데요? 조금만 더'
+  if (pct >= 45) return '아직 아무도 안 졌어요'
+  if (pct >= 30) return '음, 당신이 좀 더 뛰고 있어요'
+  return '혼자 열심히시네요…'
+}
+
+/**
+ * 마우스로 끌어서 넘긴다.
+ *
+ * 폰 화면을 데스크톱에서 보고 있으니 손가락이 없다. 휠은 되지만 카드가
+ * 화면 밖으로 넘어간 걸 눈치채기 어려워서, **잡아끌 수 있게** 한다.
+ * 터치 기기에서는 브라우저 기본 스크롤이 이미 되므로 포인터가 마우스일
+ * 때만 붙인다.
+ */
+function useDragScroll<T extends HTMLElement>(): RefObject<T | null> {
+  const ref = useRef<T>(null)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+
+    let down = false
+    let startY = 0
+    let startTop = 0
+    let moved = false
+
+    const onDown = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return
+      // 버튼·입력 위에서 시작한 드래그는 클릭을 방해하면 안 된다
+      if ((e.target as HTMLElement).closest('button, a, label, input, select')) return
+      down = true
+      moved = false
+      startY = e.clientY
+      startTop = el.scrollTop
+      el.style.cursor = 'grabbing'
+    }
+
+    const onMove = (e: PointerEvent) => {
+      if (!down) return
+      const dy = e.clientY - startY
+      if (Math.abs(dy) > 3) moved = true
+      el.scrollTop = startTop - dy
+      if (moved) e.preventDefault()
+    }
+
+    const onUp = () => {
+      down = false
+      el.style.cursor = ''
+    }
+
+    el.addEventListener('pointerdown', onDown)
+    window.addEventListener('pointermove', onMove, { passive: false })
+    window.addEventListener('pointerup', onUp)
+    return () => {
+      el.removeEventListener('pointerdown', onDown)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+    }
+  }, [])
+
+  return ref
+}
+
+/** 기울기 한마디. 위 퍼센트와 다른 축이라 문장도 따로 둔다 */
+function tiltPhraseOf(tilt: number): string {
+  if (tilt > 12) return '당신이 좀 더 뛰고 있어요'
+  if (tilt < -12) return '어? 상대가 더 오고 있는데요'
+  return '둘이 사이좋게 반반이에요'
 }
 
 export default function Flow() {
@@ -164,11 +233,6 @@ export default function Flow() {
 
   return (
     <div className="phone">
-      <div className="statusbar">
-        <span>9:41</span>
-        <span className="dots">▮▮▮</span>
-      </div>
-
       {screen === 'intro' && <Intro onNext={() => setScreen('upload')} />}
 
       {screen === 'upload' && (
@@ -222,19 +286,13 @@ function Intro({ onNext }: { onNext: () => void }) {
         누가 더 다가가고 있는지 숫자로 보여드릴게요.
       </p>
 
-      <div className="notice">
-        <span className="hint">
-          <b>썸 모드로 봐요.</b> 같은 숫자라도 친구 사이랑 썸은 읽는 방향이 달라서요.
-        </span>
-      </div>
-
       <div className="spacer" style={{ paddingBottom: 8 }}>
-        <div className="notice" style={{ marginBottom: 14 }}>
-          <span className="hint">이미지는 분석이 끝나면 바로 사라져요. 어디에도 저장하지 않아요.</span>
-        </div>
         <button className="cta" onClick={onNext}>
           시작하기
         </button>
+        <div className="undercta">
+          이미지는 분석이 끝나면 바로 사라져요. 어디에도 저장하지 않아요.
+        </div>
       </div>
     </div>
   )
@@ -265,18 +323,43 @@ function Upload({
   onRun: (me?: string) => void
   onBack: () => void
 }) {
+  const scrollRef = useDragScroll<HTMLDivElement>()
   const capRef = useRef<HTMLInputElement>(null)
   const isText = (f: File) => /\.(txt|csv)$/i.test(f.name) || f.type.startsWith('text/')
   const textFile = files.find(isText) ?? null
   const images = files.filter((f) => !isText(f))
+  // 파일마다 미리보기 URL을 만들고, 목록이 바뀌면 이전 것을 반드시 해제한다.
+  // 안 하면 지웠다 넣었다 할 때마다 blob이 쌓인다.
   const [previews, setPreviews] = useState<string[]>([])
 
   useEffect(() => {
-    const urls = images.slice(0, 2).map((f) => URL.createObjectURL(f))
+    const urls = images.map((f) => URL.createObjectURL(f))
     setPreviews(urls)
     return () => urls.forEach((u) => URL.revokeObjectURL(u))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [files])
+
+  /** 한 장만 빼고 나머지는 그대로 둔다 */
+  const removeAt = (i: number) => {
+    const rest = images.filter((_, n) => n !== i)
+    setFiles(textFile ? [textFile, ...rest] : rest)
+    // 같은 파일을 다시 고를 수 있게 입력값을 비운다
+    if (capRef.current) capRef.current.value = ''
+  }
+
+  /**
+   * 고른 것을 **더한다** — 다시 고르면 갈아치우는 게 아니라 쌓인다.
+   *
+   * 대화 파일은 하나만 둔다. 두 개를 넣으면 같은 대화인지 확인할 방법이
+   * 없고, 겹침 병합은 캡처끼리만 성립한다.
+   */
+  const addFiles = (picked: File[]) => {
+    const key = (f: File) => `${f.name}:${f.size}`
+    const seen = new Set(images.map(key))
+    const nextText = picked.find(isText) ?? textFile
+    const nextImages = [...images, ...picked.filter((f) => !isText(f) && !seen.has(key(f)))]
+    setFiles(nextText ? [nextText, ...nextImages] : nextImages)
+  }
 
   return (
     <div className="body">
@@ -290,68 +373,76 @@ function Upload({
 
       <h2 className="mid">대화를 보여주세요</h2>
       <p className="lead" style={{ marginBottom: 18 }}>
-        캡처 몇 장이든, 전체 파일이든 좋아요.
+        캡처든 내보낸 파일이든, 그냥 올려주세요.
       </p>
 
-      <div className="scroll">
-        <label className="drop">
-          <input
-            ref={capRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            multiple
-            onChange={(e) => setFiles([...(e.target.files ?? [])])}
-          />
-          <div className="plus">+</div>
-          <div className="t">{images.length ? `캡처 ${images.length}장 골랐어요` : '카톡 캡처 올리기'}</div>
-          <div className="s">1~10장 · PNG · JPG · 겹쳐 찍어도 알아서 이어붙여요</div>
-          <div className="thumbs">
-            {previews.map((u) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <div className="th" key={u}>
-                <img src={u} alt="" />
-              </div>
-            ))}
-            {previews.length < 2 && <div className="th" />}
-            {previews.length < 2 && <div className="th" />}
-            <div className="th more">+</div>
-          </div>
-        </label>
+      <div className="scroll" ref={scrollRef}>
+        {/*
+          입력을 하나로 둔다. 어느 쪽인지는 **내용을 보고** 서버가 정한다
+          (`looksLikeCsv`는 확장자가 아니라 첫 줄을 본다). UI에서만 갈라두면
+          사용자에게 없는 선택을 시키는 셈이다.
+        */}
+        <input
+          ref={capRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,.txt,.csv,text/plain,text/csv"
+          multiple
+          onChange={(e) => {
+            addFiles([...(e.target.files ?? [])])
+            e.currentTarget.value = ''
+          }}
+        />
 
-        <div className="divider">
-          <i />
-          <span>또는</span>
-          <i />
-        </div>
+        {files.length === 0 ? (
+          <label className="drop" onClick={() => capRef.current?.click()}>
+            <div className="plus">+</div>
+            <div className="t">대화 올리기</div>
+            <div className="s">
+              카톡 캡처(PNG · JPG) 여러 장이나
+              <br />
+              내보낸 파일(TXT · CSV) 하나
+            </div>
+          </label>
+        ) : (
+          /*
+            올린 뒤에는 점선도 `+` 타일도 걷는다. 점선은 "여기 넣어라"는
+            신호라, 이미 넣은 뒤에 남아 있으면 아직 안 넣은 것처럼 읽힌다.
+            더 올리는 건 그리드 아래 버튼으로 뺐다.
+          */
+          <>
+            <div className="grid">
+              {textFile && (
+                <div className="cell doc">
+                  <div className="ic">TXT</div>
+                  <div className="nm">{textFile.name}</div>
+                  <div className="sz">{(textFile.size / 1024).toFixed(0)}KB</div>
+                  <button className="x" onClick={() => setFiles(images)} aria-label="빼기">
+                    ×
+                  </button>
+                </div>
+              )}
+              {previews.map((u, i) => (
+                <div className="cell" key={u}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={u} alt="" />
+                  <button className="x" onClick={() => removeAt(i)} aria-label="빼기">
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
 
-        <label className="sheetcard" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
-          <input
-            type="file"
-            accept=".txt,.csv,text/plain,text/csv"
-            onChange={(e) => setFiles([...(e.target.files ?? [])])}
-          />
-          <div>
-            <div style={{ fontSize: 15, color: 'var(--ink)', fontWeight: 700 }}>
-              전체 대화 파일 (txt · csv)
+            <button className="addmore" onClick={() => capRef.current?.click()}>
+              + 더 올리기
+            </button>
+
+            <div className="picked">
+              {textFile
+                ? '파일 하나면 충분해요. 선톡률·월별 온도까지 전부 열려요.'
+                : `캡처 ${previews.length}장 · 겹쳐 찍어도 알아서 이어붙여요`}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--mute-2)', marginTop: 4 }}>
-              {textFile ? textFile.name : '선톡률 · 월별 온도까지 전부 열려요'}
-            </div>
-          </div>
-          <span
-            style={{
-              background: 'var(--soft-2)',
-              color: 'var(--deep)',
-              borderRadius: 999,
-              padding: '8px 16px',
-              fontSize: 13,
-              fontWeight: 700,
-              flexShrink: 0,
-            }}
-          >
-            고르기
-          </span>
-        </label>
+          </>
+        )}
 
         {/*
           목업 문구는 사실과 달랐다. 파싱은 기기가 아니라 서버가 하고,
@@ -479,6 +570,7 @@ function ResultView({
   onBack: () => void
   onMetrics: () => void
 }) {
+  const scrollRef = useDragScroll<HTMLDivElement>()
   const { report, trace, hardFloor, odds } = res
 
   if (hardFloor) {
@@ -522,10 +614,10 @@ function ResultView({
           ←
         </button>
         <span className="title">분석 결과</span>
-        <span className="icon">⋯</span>
+        <span className="icon" />
       </div>
 
-      <div className="scroll">
+      <div className="scroll" ref={scrollRef}>
         <div className="hero">
           <div className="cap">고백 성공 확률</div>
           <div className="num">
@@ -563,21 +655,14 @@ function ResultView({
                 </span>
               ))}
           </div>
-          <div className="say">
-            {h.tilt > 12
-              ? '당신 쪽에서 더 다가가고 있어요'
-              : h.tilt < -12
-                ? '상대 쪽에서 더 다가오고 있어요'
-                : '둘이 비슷하게 주고받고 있어요'}
-          </div>
+          <div className="say">{tiltPhraseOf(h.tilt)}</div>
         </div>
 
-        {trace.llm?.text && (
-          <div className="para">
-            <div className="cap">한 문단 해석</div>
-            <div className="t">{trace.llm.text}</div>
-          </div>
-        )}
+        {/*
+          한 문단 해석은 결과 화면에서 뺐다. 계산은 그대로 돌고 `/dev`의
+          LLM 탭에서 볼 수 있다 — 프롬프트·검증 결과까지 같이 봐야 하는
+          물건이라 그쪽이 맞는 자리다.
+        */}
       </div>
 
       <div className="actions">
@@ -602,6 +687,7 @@ const AXIS_NAME: Record<string, string> = {
 /* ------------------------------ 5. 지표 ------------------------------ */
 
 function MetricsView({ res, onBack }: { res: Result; onBack: () => void }) {
+  const scrollRef = useDragScroll<HTMLDivElement>()
   const r = res.report as Report
   const entries = Object.entries(r.metrics)
   const ok = entries.filter(([, m]) => m.status === 'OK')
@@ -621,7 +707,7 @@ function MetricsView({ res, onBack }: { res: Result; onBack: () => void }) {
         숫자로 보는 우리
       </h2>
 
-      <div className="scroll">
+      <div className="scroll" ref={scrollRef}>
         <div className="stack">
           {ok.map(([k, m]) => {
             const out = renderMetric(k, (m as { value: unknown }).value)
@@ -718,3 +804,5 @@ const METRIC_NAME: Record<string, string> = {
   emojiAffect: '이모티콘 온도',
   emojiVariety: '이모티콘 다양도',
 }
+
+

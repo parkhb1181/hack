@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 지표 레지스트리 — SPEC.md §5.1
  *
  * `LOCKED`와 `INSUFFICIENT`를 구분한다.

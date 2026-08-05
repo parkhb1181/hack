@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 캡처 → 리포트 전체 파이프라인 — `npx tsx scripts/dev/pipeline.ts <이름> [--real]`
  *
  * OCR 결과(.ocr.json)를 받아 공통 스키마 → 지표 → 리포트까지 돌리고,

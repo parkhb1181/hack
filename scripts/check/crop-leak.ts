@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 조각 유출 점검 — `npx tsx scripts/check/crop-leak.ts <이름...>`
  *
  * `MODELS.md` §2.2는 "조각에는 대화 글자가 없으므로 대화 내용이 외부로 나가지

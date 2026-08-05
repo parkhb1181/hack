@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 /**
  * 화면 하나에 두 모드가 산다.
