@@ -40,3 +40,6 @@ fixtures/seeds/*.csv
 
 # 데모 편의용 사본 (fixtures/seeds가 원본)
 public/demo_crush.txt
+public/pick_me.csv
+public/group.txt
+public/mom_0*.png

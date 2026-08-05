@@ -112,7 +112,7 @@ async function runOcr(file: File): Promise<OcrPage & { elapsed_sec?: number }> {
   fd.append('file', file, file.name)
   const res = await fetch(`${OCR_URL}/ocr`, { method: 'POST', body: fd })
   if (!res.ok) {
-    throw new Error(`OCR 서비스 ${res.status} — ${OCR_URL} 가 떠 있는지 확인하세요`)
+    throw new Error(`캡처를 읽는 프로그램이 응답하지 않아요 (${res.status}). 잠시 뒤 다시 해보세요.`)
   }
   return (await res.json()) as OcrPage & { elapsed_sec?: number }
 }
@@ -209,7 +209,7 @@ async function parseCaptures(files: File[]): Promise<CaptureLeg> {
 
   const rejected = pages.find((p) => p.rejected)
   if (rejected) {
-    throw new Fail(422, { error: `3인 이상 대화는 분석하지 않습니다 (화자 ${rejected.speakers}명, PRD §5)` })
+    throw new Fail(422, { error: `여러 명이 있는 단톡이에요 (${rejected.speakers}명). 둘이서 나눈 대화만 볼 수 있어요.` })
   }
 
   const before = perPage.reduce((n, m) => n + m.length, 0)
@@ -261,7 +261,7 @@ async function parseTextFile(
   if (kind === 'csv') {
     const r = parseCsv(body)
     if (isCsvFailure(r)) {
-      throw new Fail(422, { error: `CSV 형식을 읽지 못했습니다 — ${r.detail}` })
+      throw new Fail(422, { error: `csv를 읽지 못했어요 — ${r.detail}. 카카오톡에서 내보낸 원본이 맞는지 봐주세요.` })
     }
     p = r
   } else {
@@ -269,11 +269,23 @@ async function parseTextFile(
     if (isUnsupported(r)) {
       throw new Fail(422, {
             error:
-              'iOS 내보내기는 txt가 아니라 CSV입니다. 카카오톡에서 CSV로 내보낸 파일을 넣어주세요.',
+              '아이폰에서 내보낸 파일이네요. 아이폰은 txt 대신 csv로 나와요 — 그 파일을 올려주세요.',
           })
     }
     p = r
   }
+
+  // 한 건도 못 읽었으면 **묻지 말고 못 읽었다고 한다.**
+  // 실측: 줄바꿈이 깨진 파일에서 화자가 0명인데 "둘 중 누가 본인이에요?"가
+  // 빈 목록으로 떴다. 사용자가 빠져나갈 길이 없는 화면이었다.
+  if (p.raw.length === 0) {
+    throw new Fail(422, {
+      error: `대화를 한 건도 못 읽었어요. 카카오톡에서 내보낸 원본 파일이 맞는지 확인해 주세요.${
+        p.unparsed > 0 ? ` (${p.unparsed}줄이 형식에 안 맞았어요)` : ''
+      }`,
+    })
+  }
+
   const who = resolveWho(p.title, p.speakers, overrideMe)
 
   const trace: TextTrace = {
@@ -297,7 +309,7 @@ async function parseTextFile(
 
   if (who.rejected === 'group_chat') {
     throw new Fail(422, {
-          error: `3인 이상 대화는 분석하지 않습니다 (화자 ${p.speakers.length}명, PRD §5)`,
+          error: `여러 명이 있는 단톡이에요 (${p.speakers.length}명). 둘이서 나눈 대화만 볼 수 있어요.`,
           trace: { text: trace },
         })
   }
@@ -306,7 +318,7 @@ async function parseTextFile(
   // 통째로 뒤집히므로 **묻는다** — SPEC §3.10.
   if (!who.resolved) {
     throw new Fail(409, {
-          error: '누가 본인인지 골라주세요',
+          error: '둘 중 누가 본인인지 골라주세요.',
           needsSpeaker: true,
           speakers: p.speakers.map((s) => ({ name: s.name, count: s.count })),
           trace: { text: trace },
@@ -380,7 +392,7 @@ async function pipeline(form: FormData, emit: Emit) {
       detail: leg.merge ? `중복 ${leg.merge.removed}개 정리` : undefined,
     })
   } else {
-    throw new Fail(400, { error: '캡처 이미지 또는 대화 파일(.txt / .csv)을 넣어주세요' })
+    throw new Fail(400, { error: '캡처나 대화 파일을 먼저 골라주세요.' })
   }
 
   /* ── 2. 비전 — 조각만 나간다 (캡처 전용) ──────────────────── */
@@ -659,6 +671,7 @@ export async function POST(req: Request) {
     },
   })
 }
+
 
 
 
