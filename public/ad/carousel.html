@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>기울기 — 인스타 캐러셀 5장</title>
+    <!--
+      인스타그램 캐러셀 원고. 1080×1350 (4:5) 다섯 장.
+
+      · 4:5는 Meta 권장 규격이다. 1:1보다 모바일에서 화면을 3분의 1 더 차지한다.
+      · 캐러셀은 카드 크기가 전부 같아야 하므로 다섯 장 모두 같은 박스다.
+      · 색 토큰은 app/globals.css에서 그대로 가져왔다. 앱과 픽셀 단위로 같은 톤이다.
+        ⚠️ globals.css를 고치면 여기도 같이 고쳐야 한다 — 정적 HTML이라 자동으로
+        안 따라온다. 앱을 임포트하지 않은 이유는 이 파일 하나만 열면 되게 하려고.
+
+      3번 카드의 숫자와 문장은 **실제 파이프라인 출력이다.**
+      public/demo_hot.txt를 앱에 넣어 나온 값을 그대로 옮겼다. 지어낸 값이 아니다.
+
+      PNG로 뽑기: 크롬 개발자도구에서 카드를 우클릭 → "노드 스크린샷 캡처"
+      (Capture node screenshot). 1080×1350 그대로 저장된다.
+    -->
+    <style>
+      :root {
+        --page: #fff2f7;
+        --sheet: #fffafc;
+        --card: #ffffff;
+        --line: #ffe0ea;
+        --line-soft: #f8e3ec;
+        --hot: #ff4d7d;
+        --hot-2: #ff5f8f;
+        --hot-3: #ff8fb2;
+        --deep: #f0417c;
+        --ink: #35202c;
+        --ink-2: #5a3646;
+        --sub: #8f5f72;
+        --mute: #ae7a8e;
+        --faint: #d3a8b8;
+        --soft: #fff0f5;
+        --soft-2: #ffe6ee;
+        --bar-a: #ffc9dd;
+        --bar-b: #ff92b8;
+        --bar-track: #fff0f5;
+        --grad: linear-gradient(135deg, #ffab8f, #ff5f8f);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: #e9e2e6;
+        font-family: 'Pretendard Variable', Pretendard, -apple-system, 'Apple SD Gothic Neo',
+          'Malgun Gothic', sans-serif;
+        color: var(--ink);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 40px;
+        padding: 40px 0 120px;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* 인스타 4:5. 다섯 장이 전부 같은 크기여야 한다 */
+      .card {
+        width: 1080px;
+        height: 1350px;
+        flex: none;
+        position: relative;
+        overflow: hidden;
+        background: var(--page);
+        padding: 96px 88px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .tag {
+        position: absolute;
+        top: -34px;
+        left: 0;
+        font-size: 15px;
+        font-weight: 700;
+        color: #7a6570;
+        letter-spacing: 0.04em;
+      }
+
+      .wrap {
+        position: relative;
+      }
+
+      /* 카드 좌상단 워드마크 */
+      .mark {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--deep);
+        letter-spacing: -0.01em;
+      }
+      .mark i {
+        width: 46px;
+        height: 46px;
+        border-radius: 16px;
+        background: var(--grad);
+        display: grid;
+        place-items: center;
+        color: #fff;
+        font-size: 26px;
+        font-style: normal;
+        transform: rotate(-8deg);
+      }
+
+      .grow {
+        flex: 1;
+      }
+
+      h1 {
+        font-size: 118px;
+        line-height: 1.14;
+        font-weight: 800;
+        letter-spacing: -0.035em;
+      }
+      h2 {
+        font-size: 76px;
+        line-height: 1.2;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+      }
+      .lead {
+        font-size: 34px;
+        line-height: 1.55;
+        color: var(--sub);
+        font-weight: 500;
+      }
+      .kicker {
+        font-size: 26px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        color: var(--hot);
+      }
+      .fine {
+        font-size: 24px;
+        line-height: 1.6;
+        color: var(--mute);
+        font-weight: 500;
+      }
+      em.hl {
+        font-style: normal;
+        background: linear-gradient(transparent 62%, var(--soft-2) 62%);
+        padding: 0 4px;
+      }
+      .swipe {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--faint);
+        letter-spacing: 0.05em;
+      }
+
+      /* ---------- 1. 훅 ---------- */
+      .c1 {
+        background: var(--grad);
+        color: #fff;
+      }
+      .c1 .mark {
+        color: #fff;
+      }
+      .c1 .mark i {
+        background: rgba(255, 255, 255, 0.22);
+      }
+      .c1 h1 {
+        font-size: 148px;
+        margin-top: 40px;
+      }
+      .c1 .lead {
+        color: rgba(255, 255, 255, 0.92);
+        font-size: 38px;
+        font-weight: 600;
+      }
+      .c1 .swipe {
+        color: rgba(255, 255, 255, 0.75);
+      }
+
+      /* ---------- 2. 문제 ---------- */
+      .quote {
+        font-size: 62px;
+        font-weight: 800;
+        color: var(--mute);
+        line-height: 1.3;
+        letter-spacing: -0.02em;
+      }
+      .bubble {
+        background: #fff;
+        border-radius: 44px 44px 44px 12px;
+        padding: 40px 48px;
+        box-shadow: 0 18px 50px rgba(240, 65, 124, 0.12);
+        font-size: 46px;
+        font-weight: 700;
+        color: var(--ink-2);
+        display: inline-block;
+      }
+
+      /* ---------- 3. 결과 (앱 화면 그대로) ---------- */
+      .phone {
+        width: 720px;
+        margin: 0 auto;
+        background: var(--sheet);
+        border-radius: 64px;
+        border: 3px solid var(--line);
+        box-shadow: 0 40px 90px rgba(240, 65, 124, 0.2);
+        padding: 56px 52px 60px;
+      }
+      .navbar {
+        text-align: center;
+        font-size: 24px;
+        color: #c97a92;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        margin-bottom: 34px;
+      }
+      .hero {
+        text-align: center;
+      }
+      .hero .cap {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--sub);
+      }
+      .hero .num {
+        font-size: 176px;
+        font-weight: 800;
+        color: var(--hot);
+        line-height: 1.02;
+        letter-spacing: -0.05em;
+        margin: 10px 0 4px;
+      }
+      .hero .num span {
+        font-size: 76px;
+        margin-left: 6px;
+      }
+      .hero .phrase {
+        font-size: 34px;
+        font-weight: 700;
+        color: var(--deep);
+        margin-bottom: 34px;
+      }
+      .gauge {
+        position: relative;
+        height: 22px;
+        border-radius: 999px;
+        background: var(--bar-track);
+      }
+      .gauge i {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 78%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--bar-a), var(--bar-b));
+      }
+      .gauge b {
+        position: absolute;
+        top: 50%;
+        left: 78%;
+        transform: translate(-50%, -50%);
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: #fff;
+        border: 6px solid var(--hot);
+        box-shadow: 0 8px 20px rgba(255, 77, 125, 0.35);
+      }
+      .chip {
+        margin-top: 30px;
+        font-size: 22px;
+        color: var(--mute);
+        text-align: center;
+      }
+      .oneline {
+        margin-top: 34px;
+        padding: 34px 36px;
+        border-radius: 40px;
+        background: linear-gradient(135deg, #fff0f4, #ffe3ec);
+        color: var(--ink-2);
+        font-size: 32px;
+        font-weight: 700;
+        text-align: center;
+        line-height: 1.5;
+      }
+
+      /* ---------- 4. 지표 ---------- */
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 22px;
+        margin-top: 56px;
+      }
+      .m {
+        background: #fff;
+        border-radius: 34px;
+        padding: 34px 36px;
+        box-shadow: 0 10px 28px rgba(240, 65, 124, 0.08);
+      }
+      .m .k {
+        font-size: 27px;
+        font-weight: 700;
+        color: var(--ink);
+      }
+      .m .v {
+        font-size: 22px;
+        color: var(--mute);
+        margin-top: 8px;
+      }
+      .m .bar {
+        height: 12px;
+        border-radius: 999px;
+        background: var(--bar-track);
+        margin-top: 20px;
+        overflow: hidden;
+      }
+      .m .bar i {
+        display: block;
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--bar-a), var(--bar-b));
+      }
+
+      /* ---------- 5. 프라이버시 ---------- */
+      .c5 {
+        background: var(--ink);
+        color: #fff;
+      }
+      .c5 .mark {
+        color: #fff;
+      }
+      .c5 h2 {
+        font-size: 92px;
+        color: #fff;
+      }
+      .c5 .lead {
+        color: rgba(255, 255, 255, 0.72);
+      }
+      .c5 .fine {
+        color: rgba(255, 255, 255, 0.45);
+      }
+      .rows {
+        margin-top: 60px;
+        border-top: 2px solid rgba(255, 255, 255, 0.14);
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 30px 4px;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.14);
+        font-size: 32px;
+      }
+      .row span:first-child {
+        color: rgba(255, 255, 255, 0.85);
+        font-weight: 600;
+      }
+      .row .where {
+        font-weight: 800;
+        color: var(--hot-3);
+      }
+      .row .where.out {
+        color: rgba(255, 255, 255, 0.4);
+      }
+      .cta {
+        margin-top: auto;
+        background: var(--grad);
+        border-radius: 999px;
+        text-align: center;
+        padding: 40px;
+        font-size: 40px;
+        font-weight: 800;
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ═══════════════ 1. 훅 ═══════════════ -->
+    <div class="wrap">
+      <div class="tag">1 / 5 · 훅 — 스크롤을 멈추는 카드</div>
+      <div class="card c1">
+        <div class="mark"><i>기</i> 기울기</div>
+        <div class="grow" style="display: flex; flex-direction: column; justify-content: center">
+          <h1>나만<br />좋아하는<br />걸까?</h1>
+          <p class="lead" style="margin-top: 56px">
+            카톡 캡처 3장이면<br />3분 안에 숫자로 나옵니다.
+          </p>
+        </div>
+        <div class="swipe">밀어서 보기 →</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ 2. 문제 ═══════════════ -->
+    <div class="wrap">
+      <div class="tag">2 / 5 · 문제 — 왜 친구 말은 못 믿나</div>
+      <div class="card">
+        <div class="mark"><i>기</i> 기울기</div>
+        <div class="grow" style="display: flex; flex-direction: column; justify-content: center">
+          <div class="bubble">야 그건 백퍼 그린라이트지</div>
+          <p class="quote" style="margin-top: 64px">
+            근데 친구는<br />네 카톡을<br />안 봤잖아.
+          </p>
+          <p class="lead" style="margin-top: 56px">
+            기울기는 <em class="hl">최근 메시지 120개</em>를 다 읽고<br />
+            누가 더 다가가고 있는지 세어 봅니다.
+          </p>
+        </div>
+        <div class="swipe">밀어서 보기 →</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ 3. 결과 (히어로) ═══════════════ -->
+    <div class="wrap">
+      <div class="tag">3 / 5 · 결과 — 실제 출력값 그대로</div>
+      <div class="card">
+        <p class="kicker">이렇게 나옵니다</p>
+        <div class="phone" style="margin-top: 44px">
+          <div class="navbar">분석 결과</div>
+          <div class="hero">
+            <div class="cap">고백 성공 확률</div>
+            <div class="num">78<span>%</span></div>
+            <div class="phrase">반응 오는데요? 조금만 더</div>
+            <div class="gauge"><i></i><b></b></div>
+            <div class="chip">메시지 120개 · 4개 축 중 4개로 산출</div>
+            <div class="oneline">상대가 훨씬 많이 보내고 먼저 말을 걸어.</div>
+          </div>
+        </div>
+        <p class="fine" style="margin-top: 46px; text-align: center">
+          맞힐 확률이 아니라, 측정된 비대칭을 100점으로 옮긴 값입니다.<br />
+          어떤 축에서 나왔는지 화면이 전부 펴서 보여줍니다.
+        </p>
+      </div>
+    </div>
+
+    <!-- ═══════════════ 4. 근거 ═══════════════ -->
+    <div class="wrap">
+      <div class="tag">4 / 5 · 근거 — 감이 아니라는 증거</div>
+      <div class="card">
+        <div class="mark"><i>기</i> 기울기</div>
+        <h2 style="margin-top: 52px">감으로<br />안 찍습니다.</h2>
+        <div class="grid">
+          <div class="m">
+            <div class="k">누가 더 많이 보냈나</div>
+            <div class="v">메시지 수 비대칭</div>
+            <div class="bar"><i style="width: 33%"></i></div>
+          </div>
+          <div class="m">
+            <div class="k">누가 먼저 말 거나</div>
+            <div class="v">세션 단위 선톡 비율</div>
+            <div class="bar"><i style="width: 26%"></i></div>
+          </div>
+          <div class="m">
+            <div class="k">누가 더 물어보나</div>
+            <div class="v">질문이 담긴 차례</div>
+            <div class="bar"><i style="width: 71%"></i></div>
+          </div>
+          <div class="m">
+            <div class="k">답이 안 오는 비율</div>
+            <div class="v">말 걸고 묻힌 횟수</div>
+            <div class="bar"><i style="width: 18%"></i></div>
+          </div>
+          <div class="m">
+            <div class="k">누가 말투를 맞추나</div>
+            <div class="v">문장 의미 거리로 측정</div>
+            <div class="bar"><i style="width: 62%"></i></div>
+          </div>
+          <div class="m">
+            <div class="k">언제부터 식었나</div>
+            <div class="v">월별 대화량 변화점</div>
+            <div class="bar"><i style="width: 44%"></i></div>
+          </div>
+        </div>
+        <p class="fine" style="margin-top: 46px">
+          못 잰 지표는 <em class="hl" style="color: var(--ink-2)">0으로 채우지 않고 비웁니다.</em>
+          결측을 0으로 메우면 "잘 모르겠음"이 "딱 중간"으로 둔갑하니까요.
+        </p>
+      </div>
+    </div>
+
+    <!-- ═══════════════ 5. 프라이버시 + CTA ═══════════════ -->
+    <div class="wrap">
+      <div class="tag">5 / 5 · 신뢰 — 카톡을 올리라는 앱이 답해야 할 질문</div>
+      <div class="card c5">
+        <div class="mark"><i>기</i> 기울기</div>
+        <h2 style="margin-top: 44px">대화 원문은<br />기기 밖으로<br />안 나갑니다.</h2>
+        <div class="rows" style="margin-top: 48px">
+          <div class="row"><span>캡처에서 글자 읽기</span><span class="where">내 컴퓨터</span></div>
+          <div class="row"><span>말투·의미 분석</span><span class="where">내 컴퓨터</span></div>
+          <div class="row"><span>지표 계산</span><span class="where">내 컴퓨터</span></div>
+          <div class="row">
+            <span>밖으로 나가는 것</span><span class="where out">집계된 숫자뿐</span>
+          </div>
+        </div>
+        <p class="fine" style="margin-top: 32px">
+          글자 인식과 의미 분석은 전부 기기 안에서 끝냅니다.<br />
+          캡처를 쓸 때도 글자가 없는 이모티콘 조각만 나갑니다.
+        </p>
+        <div class="cta">지금 내 카톡으로 확인하기</div>
+      </div>
+    </div>
+  </body>
+</html>
