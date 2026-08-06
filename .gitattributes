@@ -7,5 +7,8 @@
 
 fixtures/seeds/*.txt -text
 fixtures/real/*.txt  -text
+# 데모용 대화도 같은 이유로 예외다. 여기 걸어 두지 않으면 커밋될 때 LF로
+# 정규화되어(실측: 55929 → 55029바이트) 클론한 쪽에서 "형식 미지원"이 뜬다.
+public/*.txt         -text
 *.png binary
 *.jpg binary
