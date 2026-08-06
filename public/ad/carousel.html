@@ -6,8 +6,9 @@
     <!--
       인스타그램 캐러셀 원고. 1080×1350 (4:5) 다섯 장.
 
-      ⚠️ 앱 이름이 아직 안 정해져서 **워드마크를 전부 뺐다.** 이름이 정해지면
-      각 카드 좌상단과 5번 CTA에 넣는다. 자리는 비워 뒀다(.slot).
+      워드마크는 다섯 장 좌상단(.slot)에 들어간다. 마크 도형은 앱과 같은 것을
+      쓴다(app/_components/Mark.tsx) — 여기서 따로 그리면 둘이 갈라진다.
+      바탕이 어두운 3·5번 카드만 `.slot.on`으로 흰색으로 뒤집는다.
 
       레퍼런스: 틴더 코리아 배너. 거기서 가져온 문법 네 개 —
         1. 초대형 헤드라인이 하단을 가로로 꽉 채운다
@@ -87,12 +88,25 @@
         padding: 84px;
       }
 
-      /* 이름이 정해지면 워드마크가 들어갈 자리 */
+      /* 워드마크. 앱 마크(app/_components/Mark.tsx)와 같은 도형이다 */
       .slot {
         position: absolute;
-        top: 76px;
+        top: 72px;
         left: 84px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 40px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+      }
+      .slot svg {
+        width: 52px;
         height: 52px;
+      }
+      .slot.on {
+        color: #fff;
       }
 
       /* ── 초대형 헤드라인 ─────────────────────────────────────
@@ -328,7 +342,7 @@
     <div class="wrap">
       <div class="tag">1 / 5 · 훅 — 스크롤을 멈추는 카드</div>
       <div class="card">
-        <div class="slot"></div>
+        <div class="slot"><svg viewBox="0 0 44 44" fill="none"><circle cx="16" cy="26" r="12" fill="currentColor"/><circle cx="32" cy="15" r="7.5" fill="currentColor" opacity=".62"/></svg>썸</div>
         <div class="ob pink" style="width: 460px; height: 460px; top: 130px; left: -90px"></div>
         <div
           class="ob lime"
@@ -350,7 +364,7 @@
     <div class="wrap">
       <div class="tag">2 / 5 · 문제 — 왜 친구 말은 못 믿나</div>
       <div class="card" style="background: var(--cream-2)">
-        <div class="slot"></div>
+        <div class="slot"><svg viewBox="0 0 44 44" fill="none"><circle cx="16" cy="26" r="12" fill="currentColor"/><circle cx="32" cy="15" r="7.5" fill="currentColor" opacity=".62"/></svg>썸</div>
         <div class="say" style="top: 150px; left: 84px">야 그건 백퍼 그린라이트지</div>
         <div class="say right" style="top: 300px; right: 84px">아니 진짜? 확실해?</div>
         <div class="say" style="top: 450px; left: 130px">내 촉은 안 틀려 ㅋㅋ</div>
@@ -365,7 +379,7 @@
     <div class="wrap">
       <div class="tag">3 / 5 · 결과 — 실제 출력값 그대로</div>
       <div class="card" style="background: var(--grad)">
-        <div class="slot"></div>
+        <div class="slot on"><svg viewBox="0 0 44 44" fill="none"><circle cx="16" cy="26" r="12" fill="currentColor"/><circle cx="32" cy="15" r="7.5" fill="currentColor" opacity=".62"/></svg>썸</div>
         <div class="phone">
           <div class="cap">그린라이트 지수</div>
           <div class="num">78<span>%</span></div>
@@ -384,7 +398,7 @@
     <div class="wrap">
       <div class="tag">4 / 5 · 차별점 — 이미 있는 앱들과 뭐가 다른가</div>
       <div class="card">
-        <div class="slot"></div>
+        <div class="slot"><svg viewBox="0 0 44 44" fill="none"><circle cx="16" cy="26" r="12" fill="currentColor"/><circle cx="32" cy="15" r="7.5" fill="currentColor" opacity=".62"/></svg>썸</div>
         <div
           class="ob lime"
           style="width: 340px; height: 340px; top: 120px; right: -70px; transform: rotate(160deg)"
@@ -413,7 +427,7 @@
     <div class="wrap">
       <div class="tag">5 / 5 · 신뢰 — 카톡을 올리라는 앱이 답해야 할 질문</div>
       <div class="card c5">
-        <div class="slot"></div>
+        <div class="slot on"><svg viewBox="0 0 44 44" fill="none"><circle cx="16" cy="26" r="12" fill="currentColor"/><circle cx="32" cy="15" r="7.5" fill="currentColor" opacity=".62"/></svg>썸</div>
         <div
           class="ob lime"
           style="width: 260px; height: 260px; top: 120px; right: -50px; transform: rotate(200deg)"

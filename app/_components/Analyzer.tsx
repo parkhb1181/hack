@@ -135,7 +135,7 @@ export default function Analyzer({ devDefault = false }: { devDefault?: boolean 
   return (
     <main>
       <header className="top">
-        <h1>기울기</h1>
+        <h1>썸</h1>
         <span className="sub">대화가 어느 쪽으로 기울어 있는지 하나의 숫자로</span>
         <span className="spacer" />
         <span

@@ -14,6 +14,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 
+import Mark from './Mark'
 import { renderMetric } from '@/lib/stats/format'
 import type { Odds } from '@/lib/stats/odds'
 import type { HardFloor, Report } from '@/lib/types'
@@ -267,7 +268,9 @@ export default function Flow() {
 function Intro({ onNext }: { onNext: () => void }) {
   return (
     <div className="body">
-      <div className="logo">↗</div>
+      <div className="logo">
+        <Mark />
+      </div>
       <h2 className="big">
         우리 대화,
         <br />
@@ -516,7 +519,7 @@ function Running({
     <div className="body">
       <div style={{ textAlign: 'center', marginTop: 12, flexShrink: 0 }}>
         <div className="logo lg" style={{ margin: '0 auto' }}>
-          ↗
+          <Mark />
         </div>
         <h2 className="mid" style={{ marginBottom: 4, marginTop: 16 }}>
           대화를 읽고 있어요

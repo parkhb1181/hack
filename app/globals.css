@@ -208,6 +208,14 @@ p.lead {
 
 /* ------------------------------ 조각 ------------------------------ */
 
+/*
+ * 마크는 글자가 아니라 SVG다(app/_components/Mark.tsx). 예전에는 `↗` 글리프를
+ * 넣었는데 폰트에 휘둘려 굵기가 시스템마다 달라졌고, 껍데기의 회전과 화살표
+ * 각도가 겹쳐 방향이 애매해졌다. 도형은 그런 게 없다.
+ *
+ * 회전도 −8도에서 −5도로 줄였다. 원 두 개는 이미 높이가 어긋나 있어서
+ * 기울기가 마크 안에 들어 있다 — 껍데기까지 세게 돌리면 두 번 기운다.
+ */
 .logo {
   width: 64px;
   height: 64px;
@@ -217,18 +225,21 @@ p.lead {
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-size: 30px;
-  font-weight: 800;
-  transform: rotate(-8deg);
-  box-shadow: 0 10px 24px rgba(255, 107, 139, 0.35);
+  transform: rotate(-5deg);
+  box-shadow: 0 10px 24px rgba(255, 95, 143, 0.35);
+}
+
+.logo svg {
+  width: 56%;
+  height: 56%;
+  display: block;
 }
 
 .logo.lg {
   width: 88px;
   height: 88px;
   border-radius: 30px;
-  font-size: 40px;
-  box-shadow: 0 16px 34px rgba(255, 107, 139, 0.4);
+  box-shadow: 0 16px 34px rgba(255, 95, 143, 0.4);
 }
 
 .pill {

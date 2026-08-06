@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: '기울기',
+  title: '썸',
   description: '우리 대화, 어느 쪽으로 기울어 있을까요?',
 }
 
