@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
       "port": 3000
+    },
+    {
+      "name": "kakao-read-web",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "scripts\\dev\\kakao-web.cmd"],
+      "port": 8000
     }
   ]
 }

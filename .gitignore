@@ -44,3 +44,7 @@ public/pick_me.csv
 public/group.txt
 public/mom_0*.png
 public/ios_*
+
+# 다른 저장소(ssggii/hackathon)를 여기 안에 받아 뒀다. 자체 .git이 있어서
+# `git add -A`가 gitlink로 박아 넣는다 — 클론한 쪽에서는 빈 폴더가 된다.
+hackathon/
